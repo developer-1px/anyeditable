@@ -389,6 +389,20 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Forward Delete at chip-left boundary removes chip and merges text', async ({ page }) => {
+    await type(page, 'hi ')
+    await page.keyboard.type('@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await type(page, 'tail')
+    // Move caret across 'tail' (4) + over chip (1) → end of 'hi ' (chip-left).
+    for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowLeft')
+    await page.keyboard.press('Delete')
+    await page.keyboard.type('X')
+    const text = await page.locator(ROOT).textContent()
+    expect(text).toBe('hi Xtail')
+  })
+
   test('Backspace at chip-right boundary removes chip and merges text', async ({ page }) => {
     await type(page, 'hi ')
     await page.keyboard.type('@bo')
