@@ -5,12 +5,16 @@ export const TextBlock = z.object({
   text: z.string(),
 })
 
+/** Mention atomic. `label` is the display name WITHOUT trigger prefix
+ *  — serialize/render adds the '@'. */
 export const MentionBlock = z.object({
   kind: z.literal('mention'),
   id: z.string(),
   label: z.string(),
 })
 
+/** Command atomic. `name` is the command identifier WITHOUT trigger prefix
+ *  — serialize/render adds the '/'. */
 export const CommandBlock = z.object({
   kind: z.literal('command'),
   name: z.string(),
