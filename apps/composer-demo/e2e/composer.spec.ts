@@ -389,6 +389,14 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('ArrowLeft past trigger anchor closes popover', async ({ page }) => {
+    await page.keyboard.type('@bo')
+    await expect(page.locator('[role="listbox"]')).toBeVisible()
+    // Move caret left past '@' (4 chars: o, b, @ — actually 3 to get to start)
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowLeft')
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+  })
+
   test('Escape closes popover; further typing within same trigger does not reopen', async ({ page }) => {
     await page.keyboard.type('@bo')
     await expect(page.locator('[role="listbox"]')).toBeVisible()

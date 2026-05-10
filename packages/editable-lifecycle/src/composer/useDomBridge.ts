@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { resolveCaret } from './resolveCaret.js'
-import { handleBI, handleCE, type DomBridgeRefs, type SetTrigger } from './bridgeHandlers.js'
+import { handleBI, handleCE, reEvalTrigger, type DomBridgeRefs, type SetTrigger } from './bridgeHandlers.js'
 
 export type { DomBridgeRefs } from './bridgeHandlers.js'
 
@@ -17,7 +17,9 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
     const onSel = () => {
       if (refs.composing.current) return
       const pos = resolveCaret(el, el.ownerDocument.getSelection())
-      if (pos) refs.caret.current = pos
+      if (!pos) return
+      refs.caret.current = pos
+      reEvalTrigger(refs, setTrigger)
     }
     let blurTimer: ReturnType<typeof setTimeout> | null = null
     const onBlur = () => { blurTimer = setTimeout(() => setTrigger(null), 100) }

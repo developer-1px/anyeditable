@@ -71,6 +71,15 @@ function insertSize(ie: InputEvent): number {
   return (ie.data ?? '').length
 }
 
+/** Caret moved without input (arrow keys / click) — re-evaluate trigger from
+ *  current block text at current caret. Closes popover when caret drifts before
+ *  the anchor or boundary is broken. */
+export function reEvalTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger): void {
+  const { doc } = refs.state.current
+  const caret = refs.caret.current
+  pushTrigger(refs, setTrigger, caret, getBlockText(doc, caret.blockIdx))
+}
+
 function pushTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger, caret: CaretPos, textProjection: string): void {
   const { triggers, minQueryLength, dismissed } = refs.state.current
   const hint = detectTrigger(textProjection, caret.offset, triggers, minQueryLength)
