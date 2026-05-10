@@ -58,9 +58,10 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
 
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])
   useDomBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)
-  const docRef = useRef(stateRef.current.doc); docRef.current = stateRef.current.doc
   const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
-  useClipboard(elRef, docRef, opsRef)
+  // Pass stateRef directly so cut/copy always read the sync-mirror doc, not a
+  // render-time snapshot that lags by one tick.
+  useClipboard(elRef, stateRef, opsRef)
   const submit = useMemo(() => makeSubmit(stateRef, onSubmit), [onSubmit])
   const cancelTrigger = useCallback(() => {
     if (trigger) stateRef.current.dismissed = { blockIdx: trigger.blockIdx, startOffset: trigger.startOffset }

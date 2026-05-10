@@ -12,22 +12,24 @@ import { deleteRangePatch } from './blockOps.js'
  *  the browser's default delete, so we issue the patch ourselves). */
 export function useClipboard(
   elRef: MutableRefObject<HTMLElement | null>,
-  docRef: MutableRefObject<ComposerDoc>,
+  docRef: MutableRefObject<ComposerDoc> | { current: { doc: ComposerDoc } },
   opsRef: MutableRefObject<JsonOps>,
 ): void {
   useEffect(() => {
     const el = elRef.current
     if (!el) return
+    const getDoc = (): ComposerDoc => 'doc' in docRef.current ? (docRef.current as { doc: ComposerDoc }).doc : (docRef.current as ComposerDoc)
     const handler = (e: ClipboardEvent) => {
       if (!e.clipboardData) return
       const sel = el.ownerDocument.getSelection()
       const dr = resolveRange(el, sel)
       if (!dr || dr.collapsed) return
+      const doc = getDoc()
       const r = { startBlock: dr.start.blockIdx, startOffset: dr.start.offset, endBlock: dr.end.blockIdx, endOffset: dr.end.offset }
-      e.clipboardData.setData('text/plain', serializeRange(docRef.current, r))
+      e.clipboardData.setData('text/plain', serializeRange(doc, r))
       e.preventDefault()
       if (e.type === 'cut') {
-        opsRef.current.apply(deleteRangePatch(docRef.current.blocks, r.startBlock, r.startOffset, r.endBlock, r.endOffset))
+        opsRef.current.apply(deleteRangePatch(doc.blocks, r.startBlock, r.startOffset, r.endBlock, r.endOffset))
       }
     }
     el.addEventListener('copy', handler as EventListener)
