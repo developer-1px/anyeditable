@@ -16,9 +16,13 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
     const onCE = (e: Event) => handleCE(e as CompositionEvent, refs, setTrigger)
     const onSel = () => {
       if (refs.composing.current) return
-      const pos = resolveCaret(el, el.ownerDocument.getSelection())
+      const sel = el.ownerDocument.getSelection()
+      const pos = resolveCaret(el, sel)
       if (!pos) return
       refs.caret.current = pos
+      // Suppress trigger updates while a non-collapsed selection exists —
+      // the user is selecting/copying, not authoring a trigger query.
+      if (sel && !sel.isCollapsed) return
       reEvalTrigger(refs, setTrigger)
     }
     let blurTimer: ReturnType<typeof setTimeout> | null = null

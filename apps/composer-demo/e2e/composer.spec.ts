@@ -122,6 +122,15 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(errorCaught).toBeNull()
   })
 
+  test('Cmd+A on doc with @text does not open trigger popover', async ({ page }) => {
+    await type(page, 'foo @bar')
+    // Trigger may be open from typing; close it.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+    await page.keyboard.press('ControlOrMeta+a')
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+  })
+
   test('Undo restores text after chip commit (chip → text)', async ({ page }) => {
     await page.keyboard.type('@bo')
     await page.keyboard.press('ArrowDown')
