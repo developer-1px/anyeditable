@@ -197,10 +197,15 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator('.composer .chip')).toHaveText('@bob')
   })
 
-  // Note: aria-kernel combobox state machine closes after activate and
-  // there's no <input onChange> from composer to re-trigger open. Popover
-  // visibility is regression-protected above; mouse click on option still
-  // commits second chip. ArrowDown+Enter activate-twice tracked separately.
+  test('multiple chips: second commit via Enter (primed listbox)', async ({ page }) => {
+    await type(page, '@bo')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+    await type(page, ' /run')
+    await expect(page.locator('.popover li')).toHaveCount(1)
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveCount(2)
+  })
 
   test('Backspace at chip boundary removes chip not preceding text', async ({ page }) => {
     await type(page, 'hi @bo')

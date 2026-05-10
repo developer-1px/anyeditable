@@ -1,6 +1,6 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useJsonDocument } from 'zod-crud'
-import type { UiEvent } from '@p/aria-kernel'
+import { ROOT, type UiEvent } from '@p/aria-kernel'
 import { useComboboxPattern } from '@p/aria-kernel/patterns'
 import {
   ComposerDoc, EMPTY_DOC, useEditableComposer, useEphemeralCollection,
@@ -62,6 +62,22 @@ export function App() {
     }
     dispatch(e)
   })
+
+  // Each time a new trigger appears, prime the aria-kernel listbox: dispatch
+  // {open:true} + {navigate:first-item}. Composer doesn't fire <input onChange>
+  // so combobox's openOnType path is dormant; we drive open/focus directly.
+  const lastTriggerKey = useRef<string | null>(null)
+  useEffect(() => {
+    if (!c.trigger || items.length === 0) {
+      lastTriggerKey.current = null
+      return
+    }
+    const key = c.trigger.kind + ':' + c.trigger.blockIdx
+    if (key === lastTriggerKey.current) return
+    lastTriggerKey.current = key
+    dispatch({ type: 'open', id: ROOT, open: true })
+    dispatch({ type: 'navigate', id: items[0]!.id })
+  }, [c.trigger, items, dispatch])
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!c.trigger) return
