@@ -425,3 +425,51 @@ combobox 등 upstream handler 가 e.preventDefault() 한 후엔 우리는 처리
 - jsdom 한계 너머 회귀 (실제 브라우저 IME, 모바일, paste-from-Word 등)
 - README 의 코드 예제가 실제로 동작하는지의 살아있는 증명
 - 향후 Playwright headless 테스트의 타겟
+
+---
+
+## F25 · React reconciliation vs contenteditable text nodes (iter 28, 자체 해결)
+
+**증상:** 한글 IME 조합 중 글자가 "밀리는" 시각 효과 — composition 결과가 React render 와
+충돌하여 textNode 가 재생성되며 caret context 가 손실.
+
+**원인:** App.tsx 가 `<span>{b.text}</span>` 로 React 를 textNode 소유자로 만듦. React reconciler 가
+모델 변경 시 textNode 를 새로 만들거나 nodeValue 를 덮어쓰며 native composition state 파괴.
+
+**iter 28 조치 (Lexical-concept self DOM reconciler):**
+- 호스트는 컨테이너 ref 만 제공 (`<div ref={c.containerRef} />`)
+- 패키지가 `useDocReconciler` 로 내부 DOM 소유: text block 은 `textNode.nodeValue` in-place 갱신
+- atomic block 은 `createPortal` 로 마운트 (DecoratorNode-equivalent)
+- 호스트 API 변경: `rootProps`/`blockProps(i)`/`atomicProps(i)` → `containerRef` + `containerProps` + `portals` + `renderAtomic`
+
+**교훈 (가족 invariant):** "headless = props만 반환" 표면이 contenteditable 시나리오에서는
+충분하지 않다. React 의 reconciliation 권한을 DOM 의 일부만 양보하는 게 native IME 와 공존 핵심.
+
+## F26 · React state batching across rapid keystrokes (iter 29, 자체 해결)
+
+**증상:** 동기적으로 빠르게 발생한 beforeinput (`burst dispatch`) 에서 doc 가 역순으로 적용됨
+(`helloworld` → `dlrowolleh`). `setState` 가 batched 되어 후속 핸들러가 stale doc 읽음.
+
+**iter 29 조치 (`useSyncDocOps`):**
+- user.ops.apply 를 래핑. 매 apply 마다 zod-crud `applyPatch` 로 stateRef.current.doc 을 동기 갱신
+- 후속 핸들러는 fresh snapshot 읽음 — React 의 setState 가 lands 하기 전에도 정합
+- onBI / compositionend / commitAtomic / useClipboard 의 cut 모두 wrappedOps 로 라우팅
+
+**교훈:** "controlled React state" 가 keyboard event 핸들러의 진실의 원천이 되려면 동기 mirror 필요.
+React 18 concurrent batching 이 이 갭을 더 자주 노출.
+
+## F27 · aria-kernel combobox 가 `<input onChange>` 없는 contenteditable 에서 닫힘 (iter 30, 자체 해결)
+
+**증상:** `@bo` 로 첫 chip 커밋 후 `/run` 입력 시 popover 가 보이지만 (`hidden=""` 추가됨), Enter 가
+activate 를 발화하지 않음. 두 번째 trigger 에서 combobox state machine 이 `open=false` 상태.
+
+**원인:** combobox 의 `openOnType` 분기는 `<input onChange>` 에서 발화. contenteditable 은 onChange 가 없음.
+첫 트리거는 `openOnFocus` 로 열렸으나 activate 후 `{open:false}` 가 fire 되어 닫힌 채로 두 번째 트리거 진입.
+
+**iter 30 조치 (`useTriggerCombobox` hook):**
+- App.tsx 가 useEffect 로 c.trigger 의 (kind, blockIdx) 키 transition 감지
+- `dispatch({type:'open', id:ROOT, open:true})` + `dispatch({type:'navigate', id:firstItem.id})` 직접 발화
+- 첫 트리거에서도 Enter 단독으로 commit 가능 (ArrowDown 불필요)
+
+**aria-kernel 후속 제안:** `useComboboxPattern` 에 "headless input" 옵션 (`controlValue?: string`) 추가하여
+contenteditable 등 onChange 없는 컨트롤에서도 typing path 가 자동 발화하도록.
