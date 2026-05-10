@@ -2,6 +2,7 @@ import { useEffect, type MutableRefObject } from 'react'
 import type { AtomicKind, ComposerDoc } from './schema.js'
 import type { JsonOps } from './useEditableComposer.js'
 import type { TriggerHint } from './triggers.js'
+import type { CaretPos } from './useDocReconciler.js'
 import { detectTrigger } from './triggers.js'
 import { handleBeforeInput } from './handleBeforeInput.js'
 import { insertTextPatch } from './blockOps.js'
@@ -12,16 +13,17 @@ import { docLength, isInsert } from './limits.js'
 
 export interface DomBridgeRefs {
   el: MutableRefObject<HTMLElement | null>
-  caret: MutableRefObject<{ blockIdx: number; offset: number }>
+  caret: MutableRefObject<CaretPos>
+  pendingCaret: MutableRefObject<CaretPos | null>
   composing: MutableRefObject<boolean>
   state: MutableRefObject<{ doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; maxLength: number | undefined }>
 }
 
 type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
 
-/** WHATWG Input Events L2 + Selection API native listener bridge.
- *  IME composition: 동안 ops 보류 → compositionend `event.data` 로 단발 insertText.
- *  blur: 100ms delay 후 trigger cancel (option mouseDown 이 먼저 fire 될 시간 확보). */
+/** WHATWG Input Events L2 + Selection API native bridge.
+ *  IME: composing 동안 ops 보류 → compositionend `event.data` 단발 insertText.
+ *  pendingCaret: 매 ops 후 model→DOM caret 복원 트리거 (reconciler 가 소비). */
 export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void {
   useEffect(() => {
     const el = refs.el.current
@@ -39,7 +41,10 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
       if (!r) return
       if (r.preventDefault) ie.preventDefault()
       if (maxLength !== undefined && isInsert(ie.inputType) && docLength(doc) >= maxLength) return
-      if (r.patches.length) ops.apply(r.patches)
+      if (r.patches.length) {
+        ops.apply(r.patches)
+        refs.pendingCaret.current = r.nextCaret
+      }
       refs.caret.current = r.nextCaret
       pushTrigger(refs, setTrigger, r.nextCaret, projectText(getBlockText(doc, r.nextCaret.blockIdx), ie))
     }
@@ -53,6 +58,7 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
       ops.apply(insertTextPatch(doc.blocks, c.blockIdx, c.offset, text))
       const next = { ...c, offset: c.offset + text.length }
       refs.caret.current = next
+      refs.pendingCaret.current = next
       pushTrigger(refs, setTrigger, next, getBlockText(doc, c.blockIdx) + text)
     }
     const onSel = () => {
@@ -84,7 +90,7 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
 function pushTrigger(
   refs: DomBridgeRefs,
   setTrigger: SetTrigger,
-  caret: { blockIdx: number; offset: number },
+  caret: CaretPos,
   textProjection: string,
 ): void {
   const { triggers, minQueryLength } = refs.state.current

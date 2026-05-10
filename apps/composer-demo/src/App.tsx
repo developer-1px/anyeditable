@@ -31,7 +31,16 @@ export function App() {
   const c = useEditableComposer({
     doc, ops,
     triggers: { '@': 'mention', '/': 'command' },
-    onSubmit: () => { setSubmitted(jd.value); jd.ops.load(EMPTY_DOC) },
+    placeholder: 'Type a message — try @ or /',
+    autoFocus: true,
+    spellCheck: true,
+    maxLength: 500,
+    renderAtomic: (b) => b.kind === 'mention'
+      ? <span className="chip">{b.label}</span>
+      : b.kind === 'command'
+      ? <span className="chip">/{b.name}</span>
+      : null,
+    onSubmit: ({ doc: d, text }) => { setSubmitted({ doc: d, text }); jd.ops.load(EMPTY_DOC) },
     onUndo: () => jd.history.undo(),
     onRedo: () => jd.history.redo(),
   })
@@ -61,15 +70,13 @@ export function App() {
 
   return (
     <>
-      <div className="composer" {...c.rootProps} onKeyDown={(e) => { onKeyDown(e); c.rootProps.onKeyDown?.(e) }}>
-        {doc.blocks.map((b, i) =>
-          b.kind === 'text'
-            ? <span key={i} {...c.blockProps(i)}>{b.text}</span>
-            : <span key={i} className="chip" {...c.blockProps(i)} {...c.atomicProps(i)}>
-                {b.kind === 'mention' ? b.label : '/' + b.name}
-              </span>
-        )}
-      </div>
+      <div
+        className="composer"
+        ref={c.containerRef}
+        {...c.containerProps}
+        onKeyDown={(e) => { onKeyDown(e); c.containerProps.onKeyDown?.(e) }}
+      />
+      {c.portals}
       {c.trigger && (
         <ul className="popover" {...cb.listboxProps}>
           {cb.items.map(it => (
