@@ -19,9 +19,17 @@ describe('clampCaret', () => {
   it('valid caret pass-through', () => {
     expect(clampCaret(doc('hello'), { blockIdx: 0, offset: 3 })).toEqual({ blockIdx: 0, offset: 3 })
   })
-  it('atomic block max offset is 1', () => {
+  it('lone atomic clamps offset to [0,1]', () => {
     const d: ComposerDoc = { blocks: [{ kind: 'mention', id: 'u', label: 'x' }] }
     expect(clampCaret(d, { blockIdx: 0, offset: 9 })).toEqual({ blockIdx: 0, offset: 1 })
+  })
+  it('atomic with adjacent text after → moves caret to start of next text', () => {
+    const d: ComposerDoc = { blocks: [{ kind: 'text', text: 'hi' }, { kind: 'mention', id: 'u', label: 'x' }, { kind: 'text', text: 'tail' }] }
+    expect(clampCaret(d, { blockIdx: 1, offset: 1 })).toEqual({ blockIdx: 2, offset: 0 })
+  })
+  it('atomic with adjacent text before → moves caret to end of prev text', () => {
+    const d: ComposerDoc = { blocks: [{ kind: 'text', text: 'hi' }, { kind: 'mention', id: 'u', label: 'x' }, { kind: 'text', text: 'tail' }] }
+    expect(clampCaret(d, { blockIdx: 1, offset: 0 })).toEqual({ blockIdx: 0, offset: 2 })
   })
 })
 
