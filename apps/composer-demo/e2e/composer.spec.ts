@@ -122,6 +122,15 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(errorCaught).toBeNull()
   })
 
+  test('Cmd+Z actually undoes last patch (zod-crud round-trip)', async ({ page }) => {
+    await type(page, 'abc')
+    await expect(page.locator(ROOT)).toHaveText('abc')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(page.locator(ROOT)).toHaveText('ab')
+    await page.keyboard.press('ControlOrMeta+Shift+z') // redo
+    await expect(page.locator(ROOT)).toHaveText('abc')
+  })
+
   test('zod-crud history wired (composerKeys onUndo path)', async ({ page }) => {
     await type(page, 'abc')
     await expect(page.locator(ROOT)).toHaveText('abc')
