@@ -67,13 +67,12 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
 
   const commitAtomic = useCallback((atomic: Block) => {
     if (!trigger) return
-    // wrappedOps via stateRef so the sync doc snapshot advances post-commit.
-    stateRef.current.ops.apply(commitAtomicPatch(doc.blocks, trigger.blockIdx, trigger.startOffset, caret.current.offset, atomic))
+    const liveDoc = stateRef.current.doc
+    if (!liveDoc.blocks[trigger.blockIdx]) { setTrigger(null); return }
+    stateRef.current.ops.apply(commitAtomicPatch(liveDoc.blocks, trigger.blockIdx, trigger.startOffset, caret.current.offset, atomic))
     const next = { blockIdx: trigger.blockIdx + 2, offset: 0 }
-    caret.current = next
-    pendingCaret.current = next
-    setTrigger(null)
-  }, [doc, trigger])
+    caret.current = next; pendingCaret.current = next; setTrigger(null)
+  }, [trigger])
 
   useAutoFocus(elRef, autoFocus)
 
