@@ -45,6 +45,9 @@ export function handleBeforeInput(e: InputEvent, ctx: BeforeInputCtx): BeforeInp
     if (hasRange) return { patches: rangePatches, nextCaret: afterRange, preventDefault: true }
     return { patches: deleteForwardPatch(doc.blocks, caret.blockIdx, caret.offset), nextCaret: same, preventDefault: true }
   }
+  if (t === 'deleteByCut' || t === 'deleteByDrag') {
+    return { patches: rangePatches, nextCaret: afterRange, preventDefault: true }
+  }
   if (WORD_LINE.has(t)) {
     if (hasRange) return { patches: rangePatches, nextCaret: afterRange, preventDefault: true }
     return rangeDelete(doc, caret, t)

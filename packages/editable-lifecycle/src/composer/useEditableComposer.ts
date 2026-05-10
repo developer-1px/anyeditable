@@ -6,6 +6,7 @@ import { commitAtomicPatch, type Patch } from './blockOps.js'
 import { useDomBridge } from './useDomBridge.js'
 import { usePendingCaret } from './usePendingCaret.js'
 import { useComposerKeys } from './composerKeys.js'
+import { useClipboard } from './useClipboard.js'
 
 export interface JsonOps {
   apply(patches: readonly Patch[]): void
@@ -51,6 +52,8 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   Object.assign(stateRef.current, { doc, ops, triggers, minQueryLength, readOnly, maxLength })
 
   useDomBridge({ el: elRef, caret, composing, state: stateRef }, setTrigger)
+  const docRef = useRef(doc); docRef.current = doc
+  useClipboard(elRef, docRef)
 
   const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, onSubmit, onUndo, onRedo })
 

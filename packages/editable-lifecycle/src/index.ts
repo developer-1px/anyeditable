@@ -14,6 +14,7 @@ export { useEditableComposer } from './composer/useEditableComposer.js'
 export { useEphemeralCollection } from './composer/useEphemeralCollection.js'
 export { resolveCaret } from './composer/resolveCaret.js'
 export type { DocPos } from './composer/resolveCaret.js'
+export { serialize, serializeBlock, serializeRange } from './composer/serialize.js'
 export type {
   UseEditableComposerOptions,
   UseEditableComposerReturn,
