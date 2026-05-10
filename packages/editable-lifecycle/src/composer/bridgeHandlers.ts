@@ -9,7 +9,7 @@ import { resolveCaret } from './resolveCaret.js'
 import { resolveRange } from './resolveRange.js'
 import { getBlockText, projectText } from './projectText.js'
 import { docLength, isInsert, rangeLength } from './limits.js'
-import { clampCaret, insertSize } from './caretClamp.js'
+import { clampCaret, clampRange, insertSize } from './caretClamp.js'
 
 export type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
 
@@ -34,7 +34,7 @@ export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, s
   refs.caret.current = clampCaret(doc, refs.caret.current)
   const dr = resolveRange(el, sel)
   const range = dr && !dr.collapsed
-    ? { startBlock: dr.start.blockIdx, startOffset: dr.start.offset, endBlock: dr.end.blockIdx, endOffset: dr.end.offset }
+    ? clampRange(doc, { startBlock: dr.start.blockIdx, startOffset: dr.start.offset, endBlock: dr.end.blockIdx, endOffset: dr.end.offset })
     : null
   const r = handleBeforeInput(ie, { doc, caret: refs.caret.current, composing: refs.composing.current, range })
   if (!r) return

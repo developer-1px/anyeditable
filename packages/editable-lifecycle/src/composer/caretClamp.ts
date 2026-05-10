@@ -12,6 +12,14 @@ export function clampCaret(doc: ComposerDoc, c: CaretPos): CaretPos {
   return { blockIdx, offset: Math.min(Math.max(c.offset, 0), maxOffset) }
 }
 
+export interface RangePos { startBlock: number; startOffset: number; endBlock: number; endOffset: number }
+
+export function clampRange(doc: ComposerDoc, r: RangePos): RangePos {
+  const s = clampCaret(doc, { blockIdx: r.startBlock, offset: r.startOffset })
+  const e = clampCaret(doc, { blockIdx: r.endBlock, offset: r.endOffset })
+  return { startBlock: s.blockIdx, startOffset: s.offset, endBlock: e.blockIdx, endOffset: e.offset }
+}
+
 /** Size of an insert (paste / drop / text / linebreak) for maxLength forecasting. */
 export function insertSize(ie: InputEvent): number {
   if (ie.inputType === 'insertLineBreak' || ie.inputType === 'insertParagraph') return 1
