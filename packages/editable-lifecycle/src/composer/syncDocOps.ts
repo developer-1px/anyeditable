@@ -20,7 +20,14 @@ export function useSyncDocOps(userOps: JsonOps, stateRef: DocSnapshotRef): JsonO
         stateRef.current.doc,
         patches as Patch[],
       )
-      if (next.result.ok) stateRef.current.doc = next.state as ComposerDoc
+      if (!next.result.ok) {
+        // Defense-in-depth: zod-crud rejected — forwarding to user.ops would
+        // throw the same error. clampCaret should prevent this upstream;
+        // log so the regression surfaces in dev without crashing the app.
+        if (typeof console !== 'undefined') console.warn('useSyncDocOps: dropped invalid patch batch', next.result, patches)
+        return
+      }
+      stateRef.current.doc = next.state as ComposerDoc
       userOps.apply(patches)
     },
   }), [userOps, stateRef])

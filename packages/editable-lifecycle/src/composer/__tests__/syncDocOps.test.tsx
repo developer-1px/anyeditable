@@ -24,14 +24,16 @@ describe('useSyncDocOps', () => {
     expect(userApply).toHaveBeenCalledTimes(3)
   })
 
-  it('invalid patch result is not committed to stateRef but user.apply still fires', () => {
+  it('invalid patch result is dropped: user.apply NOT called, stateRef unchanged', () => {
     const userApply = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const stateRef = { current: { doc: { blocks: [{ kind: 'text', text: 'hi' }] } as ComposerDoc } }
     const { result } = renderHook(() => useSyncDocOps({ apply: userApply }, stateRef))
     // Remove from out-of-range index — zod-crud applyPatch returns !ok.
     result.current.apply([{ op: 'remove', path: '/blocks/99' }])
-    expect(userApply).toHaveBeenCalled()
-    // stateRef.current.doc unchanged on failure.
+    expect(userApply).not.toHaveBeenCalled()
     expect(stateRef.current.doc).toEqual({ blocks: [{ kind: 'text', text: 'hi' }] })
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
   })
 })
