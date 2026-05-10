@@ -19,12 +19,15 @@ export interface UseEditableComposerOptions {
   doc: ComposerDoc
   ops: JsonOps
   triggers: Record<string, AtomicKind>
-  /** Atomic 블록 렌더 콜백 — DecoratorNode-equivalent. createPortal 로 contentEditable=false span 안에 마운트. */
+  /** Atomic render callback — DecoratorNode-equivalent (createPortal into contentEditable=false). */
   renderAtomic?: (block: Block) => ReactNode
   minQueryLength?: number
   multiline?: boolean
   readOnly?: boolean
   placeholder?: string
+  /** aria-label for the textbox (accessible name). Prefer labelledBy if a visible label exists. */
+  label?: string
+  labelledBy?: string
   maxLength?: number
   autoFocus?: boolean
   spellCheck?: boolean
@@ -34,19 +37,16 @@ export interface UseEditableComposerOptions {
 }
 
 export interface UseEditableComposerReturn {
-  /** Container ref — 호스트는 `<div ref={c.containerRef} />` 한 줄만. 내부 DOM 은 reconciler 가 소유. */
   containerRef: (el: HTMLElement | null) => void
-  /** Atomic block portals — 호스트 트리에 그대로 렌더 (e.g. `<>{c.portals}</>`). */
   portals: ReactNode[]
-  /** Container 에 spread 할 ARIA/contentEditable/이벤트 props. */
   containerProps: HTMLAttributes<HTMLElement>
   trigger: TriggerState | null
   commitAtomic: (atomic: Block) => void
   cancelTrigger: () => void
 }
 
-export function useEditableComposer(opts: UseEditableComposerOptions): UseEditableComposerReturn {
-  const { doc, ops, triggers, renderAtomic, onSubmit, onUndo, onRedo, minQueryLength = 0, multiline = true, readOnly = false, placeholder, maxLength, autoFocus = false, spellCheck } = opts
+export function useEditableComposer(o: UseEditableComposerOptions): UseEditableComposerReturn {
+  const { doc, ops, triggers, renderAtomic, onSubmit, onUndo, onRedo, minQueryLength = 0, multiline = true, readOnly = false, autoFocus = false, placeholder, label, labelledBy, maxLength, spellCheck } = o
   const [trigger, setTrigger] = useState<TriggerState | null>(null)
   const composing = useRef(false)
   const caret = useRef<CaretPos>({ blockIdx: 0, offset: 0 })
@@ -80,8 +80,8 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   const cancelTrigger = useCallback(() => setTrigger(null), [])
 
   const containerProps = useMemo(
-    () => buildContainerProps({ multiline, readOnly, placeholder, spellCheck, onKeyDown }),
-    [readOnly, multiline, placeholder, spellCheck, onKeyDown],
+    () => buildContainerProps({ multiline, readOnly, placeholder, label, labelledBy, spellCheck, onKeyDown }),
+    [readOnly, multiline, placeholder, label, labelledBy, spellCheck, onKeyDown],
   )
 
   return { containerRef: setRef, portals, containerProps, trigger, commitAtomic, cancelTrigger }

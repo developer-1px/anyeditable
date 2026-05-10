@@ -5,6 +5,8 @@ export interface ContainerPropsArgs {
   readOnly: boolean
   placeholder: string | undefined
   spellCheck: boolean | undefined
+  label: string | undefined
+  labelledBy: string | undefined
   onKeyDown: KeyboardEventHandler<HTMLElement>
 }
 
@@ -16,6 +18,8 @@ export function buildContainerProps(a: ContainerPropsArgs): HTMLAttributes<HTMLE
     'aria-multiline': a.multiline,
     'aria-readonly': a.readOnly || undefined,
     'aria-placeholder': a.placeholder,
+    'aria-label': a.label,
+    'aria-labelledby': a.labelledBy,
     'data-placeholder': a.placeholder,
     spellCheck: a.spellCheck,
     suppressContentEditableWarning: true,
