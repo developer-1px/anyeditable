@@ -22,7 +22,13 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
       reEvalTrigger(refs, setTrigger)
     }
     let blurTimer: ReturnType<typeof setTimeout> | null = null
-    const onBlur = () => { blurTimer = setTimeout(() => setTrigger(null), 100) }
+    const onBlur = () => {
+      // Safety: if IME composition is mid-flight when focus is lost, the OS
+      // typically commits or cancels, but compositionend isn't guaranteed.
+      // Clear the flag so the next focus session isn't stuck pre-empting input.
+      refs.composing.current = false
+      blurTimer = setTimeout(() => setTrigger(null), 100)
+    }
     const onFocus = () => { if (blurTimer !== null) { clearTimeout(blurTimer); blurTimer = null } }
     el.addEventListener('beforeinput', onBI)
     el.addEventListener('compositionstart', onCS)
