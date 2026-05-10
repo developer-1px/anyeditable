@@ -312,6 +312,58 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Shift+Enter inserts linebreak (multiline)', async ({ page }) => {
+    await type(page, 'line1')
+    await page.keyboard.press('Shift+Enter')
+    await type(page, 'line2')
+    const text = await page.locator(ROOT).textContent()
+    expect(text).toContain('line1')
+    expect(text).toContain('line2')
+    expect(text).toContain('\n')
+  })
+
+  test('compositionend with empty data does not corrupt doc', async ({ page }) => {
+    await type(page, 'hi')
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      el.dispatchEvent(new CompositionEvent('compositionstart', { data: '', bubbles: true }))
+      el.dispatchEvent(new CompositionEvent('compositionend', { data: '', bubbles: true }))
+    })
+    await expect(page.locator(ROOT)).toHaveText('hi')
+  })
+
+  test('Cut on atomic chip preserves chip serialization', async ({ page }) => {
+    await type(page, '@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+    // Select-all + cut — clipboard should receive serialized @bob form
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const sel = window.getSelection()!
+      sel.removeAllRanges(); sel.addRange(range)
+      const dt = new DataTransfer()
+      const cut = new ClipboardEvent('cut', { bubbles: true, cancelable: true, clipboardData: dt })
+      el.dispatchEvent(cut)
+      ;(window as { __cut?: string }).__cut = dt.getData('text/plain')
+    })
+    const cutText = await page.evaluate(() => (window as { __cut?: string }).__cut)
+    expect(cutText).toContain('@bob')
+  })
+
+  test('Type → blur → refocus → type continues', async ({ page }) => {
+    await type(page, 'before')
+    await page.evaluate(() => (document.querySelector('.composer') as HTMLElement).blur())
+    await page.waitForTimeout(150)  // past blur trigger-cancel delay
+    await page.locator(ROOT).click()
+    await type(page, '-after')
+    await expect(page.locator(ROOT)).toHaveText('before-after')
+  })
+
   test('Emoji input renders correctly', async ({ page }) => {
     await type(page, 'hi ')
     await page.evaluate(() => {
