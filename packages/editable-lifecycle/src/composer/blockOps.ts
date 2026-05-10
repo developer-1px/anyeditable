@@ -10,8 +10,17 @@ export type Patch = JsonPatchOperation
  */
 export function insertTextPatch(blocks: readonly Block[], blockIdx: number, offset: number, text: string): Patch[] {
   const b = blocks[blockIdx]
-  if (!b || b.kind !== 'text') {
-    return [{ op: 'add', path: `/blocks/${blockIdx}`, value: { kind: 'text', text } }]
+  if (!b) return [{ op: 'add', path: `/blocks/${blockIdx}`, value: { kind: 'text', text } }]
+  if (b.kind !== 'text') {
+    // Caret on an atomic chip: offset 0 = before chip, offset 1 = after chip.
+    // Insert into the adjacent text block if one exists, otherwise create one.
+    const targetIdx = offset > 0 ? blockIdx + 1 : blockIdx
+    const adj = blocks[targetIdx]
+    if (adj?.kind === 'text') {
+      const insertAt = offset > 0 ? 0 : adj.text.length
+      return [{ op: 'replace', path: `/blocks/${targetIdx}/text`, value: adj.text.slice(0, insertAt) + text + adj.text.slice(insertAt) }]
+    }
+    return [{ op: 'add', path: `/blocks/${targetIdx}`, value: { kind: 'text', text } }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset) + text + b.text.slice(offset) }]
 }
