@@ -355,6 +355,26 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(cutText).toContain('@bob')
   })
 
+  test('Delete (forward) at chip-left boundary removes chip', async ({ page }) => {
+    await type(page, '@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveCount(1)
+    // Move caret to start, press Delete
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      const range = document.createRange()
+      range.setStart(el, 0)
+      range.collapse(true)
+      const sel = window.getSelection()!
+      sel.removeAllRanges()
+      sel.addRange(range)
+    })
+    await page.keyboard.press('Delete')
+    await expect(page.locator('.composer .chip')).toHaveCount(0)
+  })
+
   test('Chip at start: type before chip', async ({ page }) => {
     // Commit @bob at start of doc
     await type(page, '@bo')
