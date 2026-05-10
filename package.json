@@ -1,0 +1,12 @@
+{
+  "name": "editable-lifecycle-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build -w editable-lifecycle",
+    "test": "npm test -w editable-lifecycle",
+    "typecheck": "npm run typecheck -w editable-lifecycle",
+    "verify": "npm run typecheck && npm test && npm run build"
+  }
+}
