@@ -389,6 +389,22 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Backspace at chip-right boundary removes chip and merges text', async ({ page }) => {
+    await type(page, 'hi ')
+    await page.keyboard.type('@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await type(page, 'tail')
+    const before = await page.locator(ROOT).textContent()
+    expect(before).toBe('hi @bobtail')
+    // Move caret to start of 'tail' (just after chip)
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('X')
+    const text = await page.locator(ROOT).textContent()
+    expect(text).toBe('hi Xtail')
+  })
+
   test('Trigger detected mid-text (caret in middle of word boundary)', async ({ page }) => {
     await type(page, 'hello world')
     // Move caret to between 'hello' and ' world' (offset 5)

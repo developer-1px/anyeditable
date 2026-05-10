@@ -17,6 +17,19 @@ const WORD_LINE = new Set([
   'deleteHardLineBackward', 'deleteHardLineForward',
 ])
 
+/** Backspace caret: if in middle of text → offset-1; if at text-block start and
+ *  prev block exists → land at end of prev text (or just before atomic, which
+ *  becomes the new prev after the deleteBackwardPatch removes it). */
+function caretAfterBackspace(doc: ComposerDoc, caret: { blockIdx: number; offset: number }) {
+  if (caret.offset > 0) return { ...caret, offset: caret.offset - 1 }
+  const prev = doc.blocks[caret.blockIdx - 1]
+  if (!prev) return caret
+  // prev is removed; current block shifts to prev's index.
+  const prevPrev = doc.blocks[caret.blockIdx - 2]
+  if (prevPrev?.kind === 'text') return { blockIdx: caret.blockIdx - 2, offset: prevPrev.text.length }
+  return { blockIdx: caret.blockIdx - 1, offset: 0 }
+}
+
 /** WHATWG Input Events L2 inputType 분기. composition 중 ops 보류. */
 export function handleBeforeInput(e: InputEvent, ctx: BeforeInputCtx): BeforeInputResult | null {
   if (ctx.composing) return null
@@ -37,7 +50,7 @@ export function handleBeforeInput(e: InputEvent, ctx: BeforeInputCtx): BeforeInp
     if (hasRange) return { patches: rangePatches, nextCaret: afterRange, preventDefault: true }
     return {
       patches: deleteBackwardPatch(doc.blocks, caret.blockIdx, caret.offset),
-      nextCaret: { ...same, offset: Math.max(0, caret.offset - 1) },
+      nextCaret: caretAfterBackspace(doc, caret),
       preventDefault: true,
     }
   }
