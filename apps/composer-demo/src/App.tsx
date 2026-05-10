@@ -78,9 +78,11 @@ export function App() {
         onKeyDown={(e) => { onKeyDown(e); c.containerProps.onKeyDown?.(e) }}
       />
       {c.portals}
-      {c.trigger && (
-        <ul className="popover" {...cb.listboxProps}>
-          {cb.items.map(it => (
+      {c.trigger && items.length > 0 && (
+        // c.trigger drives visibility; aria-kernel's collapsed-by-default `hidden`
+        // is suppressed since the composer's keyboard never feeds an <input onChange>.
+        <ul className="popover" {...cb.listboxProps} hidden={false}>
+          {items.map(it => (
             <li key={it.id} {...cb.optionProps(it.id)}>{String(it.label ?? it.id)}</li>
           ))}
         </ul>
