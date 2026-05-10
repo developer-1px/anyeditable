@@ -62,7 +62,7 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
   const docRef = useRef(stateRef.current.doc); docRef.current = stateRef.current.doc
   const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
   useClipboard(elRef, docRef, opsRef)
-  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(doc, onSubmit), onUndo, onRedo })
+  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(stateRef, onSubmit), onUndo, onRedo })
 
   const portals = useDocReconciler(elRef, doc, renderAtomic, pendingCaret)
 
@@ -89,12 +89,12 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
   return { containerRef: setRef, portals, containerProps, trigger, commitAtomic, cancelTrigger }
 }
 
-function makeSubmit(doc: ComposerDoc, onSubmit?: UseEditableComposerOptions['onSubmit']): (() => void) | undefined {
+function makeSubmit(s: { current: { doc: ComposerDoc } }, onSubmit?: UseEditableComposerOptions['onSubmit']) {
   if (!onSubmit) return undefined
   return () => {
+    const doc = s.current.doc
     const text = serialize(doc)
-    if (!text) return
-    onSubmit({ doc, text })
+    if (text) onSubmit({ doc, text })
   }
 }
 
