@@ -476,3 +476,24 @@ activate 를 발화하지 않음. 두 번째 trigger 에서 combobox state machi
 
 **aria-kernel 후속 제안:** `useComboboxPattern` 에 "headless input" 옵션 (`controlValue?: string`) 추가하여
 contenteditable 등 onChange 없는 컨트롤에서도 typing path 가 자동 발화하도록.
+
+## F28 · 외부 doc shrink (undo/load) 후 stale caret 으로 인한 zod-crud `path_not_found` (iter 31, 자체 해결)
+
+**증상:** chip commit + tail 입력 후 Cmd+Z 여러 번 → 다음 keystroke 마다
+`JsonCrudError: useJson failed: path_not_found — op[0]: out of range: 4` 다발성 throw.
+`bridgeHandlers.handleBI:39` 에서 ops.apply 가 zod-crud 의 applyPatch 를 거쳐 throw.
+
+**원인:** `refs.caret.current` 는 last interaction 의 blockIdx 를 그대로 들고 있음.
+외부 undo (zod-crud `commands.undo`) 가 doc.blocks 를 짧게 만들어도 caret 은 stale.
+다음 beforeinput 이 그 stale blockIdx 에 patch 를 생성 → `/blocks/4` 같은 out-of-range path → throw.
+
+**iter 31 조치 (`caretClamp.ts`):**
+- `handleBI` / `handleCE` 진입 시 `refs.caret.current = clampCaret(doc, refs.caret.current)` 로 보정
+  - `blockIdx → [0, blocks.length-1]`, `offset → [0, block.text.length]` (text) / `[0, 1]` (atomic)
+- `clampRange` 로 Selection range 도 동일 보정
+- `useSyncDocOps` 가 zodApply 결과 `!ok` 면 `userOps.apply` 를 호출하지 않고 console.warn 으로 강등 (defense-in-depth)
+- `commitAtomic` 는 `stateRef.current.doc` (sync mirror) 를 읽고 `trigger.blockIdx` 가 더 이상 존재하지 않으면 noop
+- `useClipboard`, `makeSubmit` 의 doc 소스도 sync mirror 로 통일 — rapid type → Enter 가 마지막 글자를 떨어뜨리지 않음
+
+**교훈:** "외부 state 변경 (history, load) + 내부 ref-cached cursor" 가 만나는 모든 경계에서 clamp 필요.
+React state mirror 는 항상 한 tick 뒤따라가므로 핫패스의 SSOT 는 sync mirror.
