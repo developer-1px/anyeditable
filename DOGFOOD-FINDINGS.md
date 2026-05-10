@@ -5,7 +5,7 @@
 
 종료 조건: ≥ 1건. 0건이면 우회로 푼 신호.
 
-## TL;DR — 24 findings, 6 issues filed, 18 self-resolved, 2 integration guides
+## TL;DR — 27 findings, 6 issues filed, 21 self-resolved, 2 integration guides
 
 | # | 카테고리 | 위치 | 상태 |
 |---|---|---|---|
