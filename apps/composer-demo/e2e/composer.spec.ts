@@ -130,6 +130,16 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(placeholder).toBeTruthy()
   })
 
+  test('placeholder hidden once text is typed', async ({ page }) => {
+    await type(page, 'a')
+    const before = await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      return window.getComputedStyle(el, '::before').content
+    })
+    // ::before should not render any content while text is present
+    expect(before === 'none' || before === 'normal' || before === '""').toBe(true)
+  })
+
   test('placeholder reappears after delete-all', async ({ page }) => {
     // Verifies the :has(> :only-child:empty) CSS branch — after typing and
     // deleting all chars, the empty text block triggers the prompt again.
