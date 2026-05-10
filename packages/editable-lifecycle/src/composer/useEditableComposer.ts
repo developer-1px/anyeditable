@@ -7,6 +7,7 @@ import { useDocReconciler, type CaretPos } from './useDocReconciler.js'
 import { useComposerKeys } from './composerKeys.js'
 import { useClipboard } from './useClipboard.js'
 import { useAutoFocus } from './useAutoFocus.js'
+import { useSyncDocOps } from './syncDocOps.js'
 import { buildContainerProps } from './containerProps.js'
 import { serialize } from './serialize.js'
 
@@ -52,7 +53,8 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   const pendingCaret = useRef<CaretPos | null>(null)
   const elRef = useRef<HTMLElement | null>(null)
   const stateRef = useRef({ doc, ops, triggers, minQueryLength, readOnly, maxLength })
-  Object.assign(stateRef.current, { doc, ops, triggers, minQueryLength, readOnly, maxLength })
+  Object.assign(stateRef.current, { doc, triggers, minQueryLength, readOnly, maxLength })
+  stateRef.current.ops = useSyncDocOps(ops, stateRef)
 
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])
   useDomBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)

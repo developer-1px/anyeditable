@@ -420,6 +420,21 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator(ROOT)).toHaveText(chars)
   })
 
+  test('Synchronous burst of beforeinput preserves order (state batching regression)', async ({ page }) => {
+    // useSyncDocOps maintains a synchronous doc snapshot. Without it, React
+    // setState batching across same-tick dispatches would produce reversed
+    // text like "dlrow olleh".
+    await page.locator(ROOT).click()
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      for (const ch of 'helloworld') {
+        el.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: ch, bubbles: true, cancelable: true }))
+      }
+    })
+    await expect(page.locator(ROOT)).toHaveText('helloworld')
+  })
+
   test('Type-then-backspace cycles produce expected text', async ({ page }) => {
     await type(page, 'one')
     await page.keyboard.press('Backspace')
