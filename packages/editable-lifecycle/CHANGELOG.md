@@ -37,12 +37,28 @@
 - `useSyncDocOps` — user.ops.apply 래핑하여 zod-crud `applyPatch`로 동기 doc
   snapshot 유지. onBI / compositionend / commitAtomic / cut 모두 라우팅.
 
+### Added — exports
+
+- `resolveNodeOffset(root, node, offset)` — pure DocPos resolver (avoids
+  Selection swap that `resolveRange` previously hacked).
+- `resolveRange` + `DocRange` type — selection range → doc coordinates.
+- `Patch` type alias — RFC 6902 op type for custom JsonOps implementations.
+
+### Demo
+
+- aria-kernel multi-chip activate — `useTriggerCombobox` hook primes the
+  listbox (`{open:true}` + `{navigate:first}`) on each trigger transition,
+  so Enter alone commits without ArrowDown — first AND subsequent triggers.
+- Placeholder via `:has(> :only-child:empty)` CSS selector so prompt
+  reappears after delete-all (not only on initial empty doc).
+- Command chip yellow theme via `[data-block-kind="command"] .chip` descendant selector.
+
 ### Testing
 
 - jsdom contenteditable 단위 테스트 전부 삭제 (jsdom이 IME/Selection을 충실히
-  시뮬레이트하지 못함). 43개 Playwright e2e로 대체 — real Chromium에서
+  시뮬레이트하지 못함). 48개 Playwright e2e로 대체 — real Chromium에서
   basic input, 한글 composition, click-position, range replace, paste, emoji,
-  Shift+Enter linebreak, blur-refocus, cut chip 등 검증.
+  Shift+Enter linebreak, blur-refocus, cut chip, multi-chip activate 등 검증.
 
 ## 0.3.0 — Chat composer kernel (dogfood)
 
