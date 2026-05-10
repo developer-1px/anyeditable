@@ -41,7 +41,7 @@ function syncBlocks(
     if (b.kind === 'text') {
       syncText(el, b.text)
     } else {
-      el.setAttribute('aria-label', b.kind === 'mention' ? b.label : '/' + b.name)
+      el.setAttribute('aria-label', b.kind === 'mention' ? '@' + b.label : '/' + b.name)
       if (renderAtomic) portals.push(createPortal(renderAtomic(b), el, `b${i}`))
       else syncText(el, b.kind === 'mention' ? b.label : '/' + b.name)
     }

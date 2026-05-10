@@ -36,7 +36,7 @@ export function App() {
     spellCheck: true,
     maxLength: 500,
     renderAtomic: (b) => b.kind === 'mention'
-      ? <span className="chip">{b.label}</span>
+      ? <span className="chip">@{b.label}</span>
       : b.kind === 'command'
       ? <span className="chip">/{b.name}</span>
       : null,
@@ -56,7 +56,7 @@ export function App() {
       const it = items.find(x => x.id === e.id)
       if (!it) return
       c.commitAtomic(c.trigger!.kind === 'mention'
-        ? { kind: 'mention', id: it.id, label: '@' + it.name }
+        ? { kind: 'mention', id: it.id, label: it.name }
         : { kind: 'command', name: it.name })
       return
     }

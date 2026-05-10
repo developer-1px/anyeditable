@@ -355,6 +355,38 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(cutText).toContain('@bob')
   })
 
+  test('Chip at start: type before chip', async ({ page }) => {
+    // Commit @bob at start of doc
+    await type(page, '@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+    // Move caret to start, type 'hi '
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      const range = document.createRange()
+      range.setStart(el, 0)
+      range.collapse(true)
+      const sel = window.getSelection()!
+      sel.removeAllRanges()
+      sel.addRange(range)
+    })
+    await type(page, 'hi ')
+    await expect(page.locator(ROOT)).toHaveText('hi @bob')
+  })
+
+  test('Chip serialization round-trip via onSubmit (single chip)', async ({ page }) => {
+    await type(page, 'msg @bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+    await page.keyboard.press('Enter')
+    const submitted = await page.locator('.submitted').textContent()
+    // payload JSON contains both doc.blocks and serialized text
+    expect(submitted).toContain('"text": "msg @bob"')
+  })
+
   test('Long rapid typing (200 chars) preserves order', async ({ page }) => {
     const chars = 'abcdefghij'.repeat(20)
     await page.keyboard.type(chars, { delay: 0 })
