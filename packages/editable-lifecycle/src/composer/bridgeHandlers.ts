@@ -17,7 +17,7 @@ export interface DomBridgeRefs {
   caret: { current: CaretPos }
   pendingCaret: { current: CaretPos | null }
   composing: { current: boolean }
-  state: { current: { doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; maxLength: number | undefined } }
+  state: { current: { doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; maxLength: number | undefined; dismissed: { blockIdx: number; startOffset: number } | null } }
 }
 
 /** beforeinput dispatch — caret/range read from live Selection (not cached). */
@@ -72,7 +72,18 @@ function insertSize(ie: InputEvent): number {
 }
 
 function pushTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger, caret: CaretPos, textProjection: string): void {
-  const { triggers, minQueryLength } = refs.state.current
+  const { triggers, minQueryLength, dismissed } = refs.state.current
   const hint = detectTrigger(textProjection, caret.offset, triggers, minQueryLength)
-  setTrigger(hint ? { ...hint, blockIdx: caret.blockIdx } : null)
+  if (!hint) {
+    // Trigger condition broken — clear dismissed so a future trigger at the
+    // same anchor isn't accidentally suppressed.
+    refs.state.current.dismissed = null
+    setTrigger(null)
+    return
+  }
+  if (dismissed && dismissed.blockIdx === caret.blockIdx && dismissed.startOffset === hint.startOffset) {
+    setTrigger(null)
+    return
+  }
+  setTrigger({ ...hint, blockIdx: caret.blockIdx })
 }

@@ -52,7 +52,7 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
   const caret = useRef<CaretPos>({ blockIdx: 0, offset: 0 })
   const pendingCaret = useRef<CaretPos | null>(null)
   const elRef = useRef<HTMLElement | null>(null)
-  const stateRef = useRef({ doc, ops, triggers, minQueryLength, readOnly, maxLength })
+  const stateRef = useRef({ doc, ops, triggers, minQueryLength, readOnly, maxLength, dismissed: null as { blockIdx: number; startOffset: number } | null })
   Object.assign(stateRef.current, { doc, triggers, minQueryLength, readOnly, maxLength })
   stateRef.current.ops = useSyncDocOps(ops, stateRef)
 
@@ -77,7 +77,9 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
 
   useAutoFocus(elRef, autoFocus)
 
-  const cancelTrigger = useCallback(() => setTrigger(null), [])
+  const cancelTrigger = useCallback(() => {
+    if (trigger) stateRef.current.dismissed = { blockIdx: trigger.blockIdx, startOffset: trigger.startOffset }
+    setTrigger(null) }, [trigger])
 
   const containerProps = useMemo(
     () => buildContainerProps({ multiline, readOnly, placeholder, label, labelledBy, spellCheck, onKeyDown }),

@@ -389,6 +389,17 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Escape closes popover; further typing within same trigger does not reopen', async ({ page }) => {
+    await page.keyboard.type('@bo')
+    await expect(page.locator('[role="listbox"]')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+    await page.keyboard.type('b') // continue typing same word — should NOT reopen popover
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+    const text = await page.locator(ROOT).textContent()
+    expect(text).toBe('@bob')
+  })
+
   test('Enter after chip-commit submits (popover-closed Enter behavior)', async ({ page }) => {
     await page.keyboard.type('@bo')
     await page.keyboard.press('ArrowDown')
