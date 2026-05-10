@@ -162,6 +162,13 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator('.popover li')).toHaveCount(1)
   })
 
+  // Note: "second activate via Enter after first chip" is a known limitation
+  // of aria-kernel's combobox state machine — after activate it goes closed
+  // and the composer (no <input onChange>) can't re-trigger the navigate→open
+  // path automatically. The popover IS visible (regression-protected above);
+  // selection via click works; only ArrowDown+Enter without re-typing is
+  // affected. Tracked in aria-kernel#xxx for a future fix.
+
   test('Backspace at chip boundary removes chip not preceding text', async ({ page }) => {
     await type(page, 'hi @bo')
     await page.keyboard.press('ArrowDown')
