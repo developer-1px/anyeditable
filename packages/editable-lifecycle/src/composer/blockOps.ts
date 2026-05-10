@@ -23,6 +23,15 @@ export function deleteBackwardPatch(blocks: readonly Block[], blockIdx: number, 
   if (offset <= 0) {
     const prev = blocks[blockIdx - 1]
     if (!prev) return []
+    // Removing an atomic between two text blocks merges them; otherwise just drop prev.
+    const prevPrev = blocks[blockIdx - 2]
+    if (prev.kind !== 'text' && prevPrev?.kind === 'text') {
+      return [
+        { op: 'replace', path: `/blocks/${blockIdx - 2}/text`, value: prevPrev.text + b.text },
+        { op: 'remove', path: `/blocks/${blockIdx}` },
+        { op: 'remove', path: `/blocks/${blockIdx - 1}` },
+      ]
+    }
     return [{ op: 'remove', path: `/blocks/${blockIdx - 1}` }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset - 1) + b.text.slice(offset) }]
@@ -35,6 +44,14 @@ export function deleteForwardPatch(blocks: readonly Block[], blockIdx: number, o
   if (offset >= b.text.length) {
     const next = blocks[blockIdx + 1]
     if (!next) return []
+    const nextNext = blocks[blockIdx + 2]
+    if (next.kind !== 'text' && nextNext?.kind === 'text') {
+      return [
+        { op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text + nextNext.text },
+        { op: 'remove', path: `/blocks/${blockIdx + 2}` },
+        { op: 'remove', path: `/blocks/${blockIdx + 1}` },
+      ]
+    }
     return [{ op: 'remove', path: `/blocks/${blockIdx + 1}` }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset) + b.text.slice(offset + 1) }]

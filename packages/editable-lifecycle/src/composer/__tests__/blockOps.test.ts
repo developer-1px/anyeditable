@@ -32,8 +32,10 @@ describe('deleteForwardPatch', () => {
       { op: 'replace', path: '/blocks/0/text', value: 'ello' },
     ])
   })
-  it('at end of text → removes next atomic block', () => {
-    expect(deleteForwardPatch([text('hi'), mention('@bob'), text('')], 0, 2)).toEqual([
+  it('at end of text → removes next atomic + merges surrounding text', () => {
+    expect(deleteForwardPatch([text('hi'), mention('@bob'), text('tail')], 0, 2)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'hitail' },
+      { op: 'remove', path: '/blocks/2' },
       { op: 'remove', path: '/blocks/1' },
     ])
   })
