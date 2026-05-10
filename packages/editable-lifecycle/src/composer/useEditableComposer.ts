@@ -59,7 +59,8 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])
   useDomBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)
   const docRef = useRef(doc); docRef.current = doc
-  const opsRef = useRef(ops); opsRef.current = ops
+  // useClipboard uses wrappedOps so cut advances the synchronous snapshot.
+  const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
   useClipboard(elRef, docRef, opsRef)
   const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(doc, onSubmit), onUndo, onRedo })
 
