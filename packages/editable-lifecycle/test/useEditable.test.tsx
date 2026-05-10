@@ -231,6 +231,50 @@ describe('useEditable', () => {
     expect(r.getByTestId('state').textContent).toBe('idle')
   })
 
+  it('Alt+Enter does not commit (textarea newline)', () => {
+    const onCommit = vi.fn()
+    const r = render(<Harness values={{ a: '' }} onCommit={onCommit} />)
+    fireEvent.click(r.getByText('start'))
+    fireEvent.keyDown(r.getByTestId('input'), { key: 'Enter', altKey: true })
+    expect(onCommit).not.toHaveBeenCalled()
+    expect(r.getByTestId('state').textContent).toBe('a')
+  })
+
+  it('Cmd+Enter commits without navigation', () => {
+    const onCommit = vi.fn()
+    const onNavigate = vi.fn()
+    const r = render(<Harness values={{ a: '' }} onCommit={onCommit} onNavigate={onNavigate} />)
+    fireEvent.click(r.getByText('start'))
+    fireEvent.change(r.getByTestId('input'), { target: { value: 'k' } })
+    fireEvent.keyDown(r.getByTestId('input'), { key: 'Enter', metaKey: true })
+    expect(onCommit).toHaveBeenCalledWith('a', 'k')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+
+  it('readOnly blocks startEdit', () => {
+    const onCommit = vi.fn()
+    function H() {
+      const ed = useEditable<string>({
+        getValue: () => 'x',
+        onCommit,
+        readOnly: (id) => id === 'locked',
+      })
+      return (
+        <div>
+          <span data-testid="state">{ed.editing ?? 'idle'}</span>
+          <button onClick={() => ed.startEdit('locked')}>locked</button>
+          <button onClick={() => ed.startEdit('open')}>open</button>
+          {ed.editing && <input data-testid="input" {...ed.inputProps} />}
+        </div>
+      )
+    }
+    const r = render(<H />)
+    fireEvent.click(r.getByText('locked'))
+    expect(r.getByTestId('state').textContent).toBe('idle')
+    fireEvent.click(r.getByText('open'))
+    expect(r.getByTestId('state').textContent).toBe('open')
+  })
+
   it('blur commits without navigation', () => {
     const onCommit = vi.fn()
     const onNavigate = vi.fn()

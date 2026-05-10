@@ -10,8 +10,16 @@ export interface UseEditableOptions<TId> {
   onNavigate?: (id: TId, dir: NavDir) => TId | null
   /** Initial focused id. */
   initialFocus?: TId | null
-  /** Map keys to navigation directions on commit. Default: Enter=down, Tab=right, Shift+Tab=left, Shift+Enter=up. */
+  /**
+   * Map keys to navigation directions on commit. Default:
+   * - Enter → down (Shift+Enter → up)
+   * - Tab → right (Shift+Tab → left)
+   * - Alt+Enter → null (textarea newline, no commit)
+   * - Ctrl/Cmd+Enter → 'commit-stay' (commit without navigation)
+   */
   commitKeyMap?: (e: KeyboardEvent) => NavDir | 'commit-stay' | null
+  /** When true, startEdit is a no-op. Useful for read-only cells. */
+  readOnly?: (id: TId) => boolean
 }
 
 type EditableEl = HTMLInputElement | HTMLTextAreaElement
@@ -38,7 +46,13 @@ export interface SelectProps {
 }
 
 const defaultCommitKeyMap = (e: KeyboardEvent): NavDir | 'commit-stay' | null => {
-  if (e.key === 'Enter') return e.shiftKey ? 'up' : 'down'
+  if (e.key === 'Enter') {
+    // Alt+Enter inserts a newline in textarea (Google Sheets convention) — skip commit.
+    if (e.altKey) return null
+    // Cmd/Ctrl+Enter commits without navigation (power user).
+    if (e.metaKey || e.ctrlKey) return 'commit-stay'
+    return e.shiftKey ? 'up' : 'down'
+  }
   if (e.key === 'Tab') return e.shiftKey ? 'left' : 'right'
   return null
 }
@@ -54,7 +68,7 @@ const isComposingEvent = (e: KeyboardEvent): boolean => {
 }
 
 export function useEditable<TId>(opts: UseEditableOptions<TId>) {
-  const { getValue, onCommit, onNavigate, initialFocus = null, commitKeyMap = defaultCommitKeyMap } = opts
+  const { getValue, onCommit, onNavigate, initialFocus = null, commitKeyMap = defaultCommitKeyMap, readOnly } = opts
 
   const [focusId, setFocusId] = useState<TId | null>(initialFocus)
   const [editing, setEditing] = useState<TId | null>(null)
@@ -65,13 +79,14 @@ export function useEditable<TId>(opts: UseEditableOptions<TId>) {
 
   const startEdit = useCallback(
     (id: TId, prefill?: string, opts?: { caret?: CaretMode }) => {
+      if (readOnly?.(id)) return
       setEditing(id)
       setDraft(prefill !== undefined ? prefill : getValue(id))
       // Type-to-edit (prefill given) → caret-end so the next keystroke continues the word.
       // F2/double-click (no prefill) → caret-end by Google Sheets convention.
       caretModeRef.current = opts?.caret ?? 'end'
     },
-    [getValue],
+    [getValue, readOnly],
   )
 
   const cancelEdit = useCallback(() => {

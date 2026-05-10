@@ -1,6 +1,6 @@
 {
   "name": "editable-lifecycle",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "IME-safe inline-edit lifecycle hook for React. start/cancel/commit + draft + type-to-edit + navigate-after-commit. The de facto contenteditable replacement that handles Korean/Japanese/Chinese composition correctly.",
   "type": "module",
   "license": "MIT",

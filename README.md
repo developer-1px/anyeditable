@@ -49,9 +49,15 @@ function CellGrid({ values, save }) {
 
 - **IME-safe Enter/Escape**: composition is gated via `nativeEvent.isComposing` + `keyCode 229` fallback
 - **Type-to-edit**: printable key starts edit pre-filled with the typed character; modifiers and named keys are ignored
-- **Navigate-after-commit**: Enter→down, Shift+Enter→up, Tab→right, Shift+Tab→left (customizable via `commitKeyMap`)
+- **Navigate-after-commit**: Enter→down, Shift+Enter→up, Tab→right, Shift+Tab→left
+  - Alt+Enter → newline (textarea), no commit
+  - Cmd/Ctrl+Enter → commit-stay (no navigation)
+  - Customizable via `commitKeyMap`
+- **Auto-focus + caret control**: hook owns the input ref; caret modes `'end'` | `'start'` | `'select-all'` | `'preserve'`
 - **Blur-commit**: focus loss commits without navigation
 - **Escape-cancel**: discards draft
+- **`<select>` adapter (`selectProps`)**: change-commits-immediately UX for validation dropdowns
+- **Read-only gate**: `readOnly: (id) => boolean` blocks `startEdit`
 
 ## API
 
