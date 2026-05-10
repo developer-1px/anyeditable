@@ -133,6 +133,20 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator(ROOT)).toHaveText('next')
   })
 
+  test('Submit clears dismissed: fresh @ after Enter reopens popover', async ({ page }) => {
+    await type(page, '@bo')
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+    // Submit to clear doc.
+    await page.keyboard.press('End')
+    await type(page, ' more text')
+    await page.keyboard.press('Enter') // submit
+    await expect(page.locator('.submitted')).toBeVisible()
+    // Now type a fresh @ — should NOT be suppressed by stale dismissed.
+    await type(page, '@bo')
+    await expect(page.locator('[role="listbox"]')).toBeVisible()
+  })
+
   test('Rapid type-then-Enter captures all chars (submit reads sync mirror)', async ({ page }) => {
     // Burst many chars then immediately press Enter — submit must include ALL chars
     // even if React state lagged the sync mirror by a tick.

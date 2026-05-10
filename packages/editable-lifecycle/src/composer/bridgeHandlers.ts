@@ -79,18 +79,21 @@ export function reEvalTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger): void
 }
 
 function pushTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger, caret: CaretPos, textProjection: string): void {
-  const { triggers, minQueryLength, dismissed } = refs.state.current
-  const hint = detectTrigger(textProjection, caret.offset, triggers, minQueryLength)
-  if (!hint) {
-    // Trigger condition broken — clear dismissed so a future trigger at the
-    // same anchor isn't accidentally suppressed.
-    refs.state.current.dismissed = null
-    setTrigger(null)
-    return
+  const { doc, triggers, minQueryLength } = refs.state.current
+  // Invalidate dismissed if its anchor no longer points to a live trigger char
+  // (block removed, text changed). This covers submit + load, undo past the
+  // dismiss point, backspace-to-clear, etc.
+  const d = refs.state.current.dismissed
+  if (d) {
+    const block = doc.blocks[d.blockIdx]
+    const anchorChar = block?.kind === 'text' ? block.text[d.startOffset] : undefined
+    if (!anchorChar || !triggers[anchorChar]) refs.state.current.dismissed = null
   }
+  const hint = detectTrigger(textProjection, caret.offset, triggers, minQueryLength)
+  if (!hint) { refs.state.current.dismissed = null; setTrigger(null); return }
+  const dismissed = refs.state.current.dismissed
   if (dismissed && dismissed.blockIdx === caret.blockIdx && dismissed.startOffset === hint.startOffset) {
-    setTrigger(null)
-    return
+    setTrigger(null); return
   }
   setTrigger({ ...hint, blockIdx: caret.blockIdx })
 }
