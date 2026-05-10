@@ -65,7 +65,8 @@ export function App() {
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!c.trigger) return
-    if (/^(Arrow|Enter|Escape|Home|End)/.test(e.key)) cb.comboboxProps.onKeyDown?.(e)
+    if (e.key === 'Escape') { e.preventDefault(); c.cancelTrigger(); return }
+    if (/^(Arrow|Enter|Home|End)/.test(e.key)) cb.comboboxProps.onKeyDown?.(e)
   }
 
   return (
