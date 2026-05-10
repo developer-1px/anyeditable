@@ -19,7 +19,11 @@ export function useDocReconciler(
   useLayoutEffect(() => {
     const root = containerRef.current
     if (!root) return
-    setPortals(syncBlocks(root, doc.blocks, renderRef.current))
+    const next = syncBlocks(root, doc.blocks, renderRef.current)
+    // Skip setState when no atomic blocks — avoids a useless re-render per
+    // text keystroke. (Text blocks mutate DOM directly; only atomic portals
+    // need React reconciliation.)
+    setPortals(prev => (prev.length === 0 && next.length === 0 ? prev : next))
     if (pendingCaret.current) {
       restoreCaret(root, pendingCaret.current)
       pendingCaret.current = null
