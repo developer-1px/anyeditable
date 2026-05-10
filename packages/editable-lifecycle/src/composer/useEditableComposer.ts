@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { HTMLAttributes } from 'react'
 import type { AtomicKind, Block, ComposerDoc } from './schema.js'
 import type { TriggerHint } from './triggers.js'
@@ -27,6 +27,7 @@ export interface UseEditableComposerOptions {
   readOnly?: boolean  // contentEditable=false + skip beforeinput patches
   placeholder?: string  // data-placeholder attr — CSS `:empty::before { content: attr(data-placeholder) }`
   maxLength?: number  // total text length cap; inserts clipped (atomics counted as 1)
+  autoFocus?: boolean  // focus root on mount
   onSubmit?: (payload: { doc: ComposerDoc; text: string }) => void
   onUndo?: () => boolean | void  // Cmd/Ctrl+Z
   onRedo?: () => boolean | void  // Cmd/Ctrl+Shift+Z
@@ -44,7 +45,7 @@ export interface UseEditableComposerReturn {
 }
 
 export function useEditableComposer(opts: UseEditableComposerOptions): UseEditableComposerReturn {
-  const { doc, ops, triggers, onSubmit, onUndo, onRedo, minQueryLength = 0, multiline = true, readOnly = false, placeholder, maxLength } = opts
+  const { doc, ops, triggers, onSubmit, onUndo, onRedo, minQueryLength = 0, multiline = true, readOnly = false, placeholder, maxLength, autoFocus = false } = opts
   const [trigger, setTrigger] = useState<TriggerState | null>(null)
   const composing = useRef(false)
   const caret = useRef({ blockIdx: 0, offset: 0 })
@@ -55,7 +56,8 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
 
   useDomBridge({ el: elRef, caret, composing, state: stateRef }, setTrigger)
   const docRef = useRef(doc); docRef.current = doc
-  useClipboard(elRef, docRef)
+  const opsRef = useRef(ops); opsRef.current = ops
+  useClipboard(elRef, docRef, opsRef)
   const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(doc, onSubmit), onUndo, onRedo })
 
   const commitAtomic = useCallback((atomic: Block) => {
@@ -68,6 +70,8 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   }, [doc, ops, trigger])
 
   usePendingCaret(elRef, pendingCaret)
+
+  useEffect(() => { if (autoFocus) elRef.current?.focus() }, [autoFocus])
 
   const cancelTrigger = useCallback(() => setTrigger(null), [])
 

@@ -5,13 +5,14 @@ import { useEditableComposer } from '../useEditableComposer.js'
 import { EMPTY_DOC } from '../schema.js'
 import { makeOps } from './Harness.js'
 
-function App({ readOnly, placeholder, maxLength }: { readOnly?: boolean; placeholder?: string; maxLength?: number }) {
+function App({ readOnly, placeholder, maxLength, autoFocus }: { readOnly?: boolean; placeholder?: string; maxLength?: number; autoFocus?: boolean }) {
   const [doc, setDoc] = useState(EMPTY_DOC)
   const opts: Parameters<typeof useEditableComposer>[0] = {
     doc, ops: makeOps(() => doc, setDoc), triggers: { '@': 'mention' },
     ...(readOnly !== undefined && { readOnly }),
     ...(placeholder !== undefined && { placeholder }),
     ...(maxLength !== undefined && { maxLength }),
+    ...(autoFocus !== undefined && { autoFocus }),
   }
   const c = useEditableComposer(opts)
   return (
@@ -55,6 +56,11 @@ describe('useEditableComposer options (production polish)', () => {
     expect(getByTestId('len').textContent).toBe('3')
     fire('d')
     expect(getByTestId('len').textContent).toBe('3')
+  })
+
+  it('autoFocus: focuses root on mount', () => {
+    const { getByTestId } = render(<App autoFocus />)
+    expect(document.activeElement).toBe(getByTestId('root'))
   })
 
   it('default: contentEditable=true, no aria-readonly, no placeholder', () => {
