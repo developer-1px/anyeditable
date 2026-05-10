@@ -62,7 +62,10 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
   const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
   useClipboard(elRef, docRef, opsRef)
   const submit = useMemo(() => makeSubmit(stateRef, onSubmit), [onSubmit])
-  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit, onUndo, onRedo })
+  const cancelTrigger = useCallback(() => {
+    if (trigger) stateRef.current.dismissed = { blockIdx: trigger.blockIdx, startOffset: trigger.startOffset }
+    setTrigger(null) }, [trigger])
+  const onKeyDown = useComposerKeys({ composing, trigger, cancelTrigger, submit, onUndo, onRedo })
 
   const portals = useDocReconciler(elRef, doc, renderAtomic, pendingCaret)
 
@@ -76,10 +79,6 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
   }, [trigger])
 
   useAutoFocus(elRef, autoFocus)
-
-  const cancelTrigger = useCallback(() => {
-    if (trigger) stateRef.current.dismissed = { blockIdx: trigger.blockIdx, startOffset: trigger.startOffset }
-    setTrigger(null) }, [trigger])
 
   const containerProps = useMemo(
     () => buildContainerProps({ multiline, readOnly, placeholder, label, labelledBy, spellCheck, onKeyDown }),

@@ -16,7 +16,7 @@ function setup(over: Partial<Parameters<typeof useComposerKeys>[0]> = {}) {
   const opts = {
     composing: { current: false },
     trigger: null,
-    setTrigger: vi.fn(),
+    cancelTrigger: vi.fn(),
     submit: vi.fn(),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
@@ -64,13 +64,13 @@ describe('useComposerKeys', () => {
   it('Escape with trigger clears trigger', () => {
     const { handler, opts } = setup({ trigger: { foo: 'bar' } })
     handler(fakeEvent({ key: 'Escape' }))
-    expect(opts.setTrigger).toHaveBeenCalledWith(null)
+    expect(opts.cancelTrigger).toHaveBeenCalled()
   })
 
   it('Escape without trigger does nothing', () => {
     const { handler, opts } = setup({ trigger: null })
     handler(fakeEvent({ key: 'Escape' }))
-    expect(opts.setTrigger).not.toHaveBeenCalled()
+    expect(opts.cancelTrigger).not.toHaveBeenCalled()
   })
 
   it('skips when defaultPrevented', () => {
