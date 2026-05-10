@@ -58,11 +58,11 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
 
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])
   useDomBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)
-  // Clipboard reads the sync-mirror doc so cut/copy never trail behind rapid edits.
   const docRef = useRef(stateRef.current.doc); docRef.current = stateRef.current.doc
   const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
   useClipboard(elRef, docRef, opsRef)
-  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(stateRef, onSubmit), onUndo, onRedo })
+  const submit = useMemo(() => makeSubmit(stateRef, onSubmit), [onSubmit])
+  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit, onUndo, onRedo })
 
   const portals = useDocReconciler(elRef, doc, renderAtomic, pendingCaret)
 
