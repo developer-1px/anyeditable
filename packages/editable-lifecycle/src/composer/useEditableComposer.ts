@@ -67,12 +67,15 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
 
   const commitAtomic = useCallback((atomic: Block) => {
     if (!trigger) return
-    ops.apply(commitAtomicPatch(doc.blocks, trigger.blockIdx, trigger.startOffset, caret.current.offset, atomic))
+    // Route through stateRef.current.ops (wrappedOps) so the synchronous
+    // doc snapshot advances — keystrokes immediately after commit see the
+    // post-commit blocks.
+    stateRef.current.ops.apply(commitAtomicPatch(doc.blocks, trigger.blockIdx, trigger.startOffset, caret.current.offset, atomic))
     const next = { blockIdx: trigger.blockIdx + 2, offset: 0 }
     caret.current = next
     pendingCaret.current = next
     setTrigger(null)
-  }, [doc, ops, trigger])
+  }, [doc, trigger])
 
   useAutoFocus(elRef, autoFocus)
 
