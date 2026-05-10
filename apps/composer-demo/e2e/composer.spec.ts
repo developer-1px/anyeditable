@@ -389,6 +389,18 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Select-all + type replaces whole doc with single char', async ({ page }) => {
+    await type(page, 'hi ')
+    await page.keyboard.type('@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await type(page, 'tail')
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.type('X')
+    const text = await page.locator(ROOT).textContent()
+    expect(text).toBe('X')
+  })
+
   test('Forward Delete at chip-left boundary removes chip and merges text', async ({ page }) => {
     await type(page, 'hi ')
     await page.keyboard.type('@bo')
