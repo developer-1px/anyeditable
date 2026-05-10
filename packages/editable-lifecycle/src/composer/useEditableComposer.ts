@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { HTMLAttributes, KeyboardEvent } from 'react'
+import type { HTMLAttributes } from 'react'
 import type { AtomicKind, Block, ComposerDoc } from './schema.js'
 import type { TriggerHint } from './triggers.js'
 import { commitAtomicPatch, type Patch } from './blockOps.js'
 import { useDomBridge } from './useDomBridge.js'
 import { usePendingCaret } from './usePendingCaret.js'
+import { useComposerKeys } from './composerKeys.js'
 
 export interface JsonOps {
   apply(patches: readonly Patch[]): void
@@ -20,6 +21,9 @@ export interface UseEditableComposerOptions {
   triggers: Record<string, AtomicKind>
   minQueryLength?: number  // popover 표시 전 query 최소 길이 (default 0)
   multiline?: boolean  // aria-multiline (default true — Shift+Enter 줄바꿈 지원)
+  readOnly?: boolean  // contentEditable=false + skip beforeinput patches
+  placeholder?: string  // data-placeholder attr — CSS `:empty::before { content: attr(data-placeholder) }`
+  maxLength?: number  // total text length cap; inserts clipped (atomics counted as 1)
   onSubmit?: () => void
   onUndo?: () => boolean | void  // Cmd/Ctrl+Z
   onRedo?: () => boolean | void  // Cmd/Ctrl+Shift+Z
@@ -37,28 +41,18 @@ export interface UseEditableComposerReturn {
 }
 
 export function useEditableComposer(opts: UseEditableComposerOptions): UseEditableComposerReturn {
-  const { doc, ops, triggers, onSubmit, onUndo, onRedo, minQueryLength = 0, multiline = true } = opts
+  const { doc, ops, triggers, onSubmit, onUndo, onRedo, minQueryLength = 0, multiline = true, readOnly = false, placeholder, maxLength } = opts
   const [trigger, setTrigger] = useState<TriggerState | null>(null)
   const composing = useRef(false)
   const caret = useRef({ blockIdx: 0, offset: 0 })
   const pendingCaret = useRef<{ blockIdx: number; offset: number } | null>(null)
   const elRef = useRef<HTMLElement | null>(null)
-  const stateRef = useRef({ doc, ops, triggers, minQueryLength })
-  Object.assign(stateRef.current, { doc, ops, triggers, minQueryLength })
+  const stateRef = useRef({ doc, ops, triggers, minQueryLength, readOnly, maxLength })
+  Object.assign(stateRef.current, { doc, ops, triggers, minQueryLength, readOnly, maxLength })
 
   useDomBridge({ el: elRef, caret, composing, state: stateRef }, setTrigger)
 
-  const onKeyDown = useCallback((e: KeyboardEvent<HTMLElement>) => {
-    if (e.defaultPrevented) return  // upstream handler (e.g., combobox) already consumed
-    const mod = e.metaKey || e.ctrlKey
-    if (mod && (e.key === 'z' || e.key === 'Z')) {
-      const handler = e.shiftKey ? onRedo : onUndo
-      if (handler) { e.preventDefault(); handler() }
-      return
-    }
-    if (e.key === 'Enter' && !e.shiftKey && !composing.current) { e.preventDefault(); onSubmit?.() }
-    else if (e.key === 'Escape' && trigger) { e.preventDefault(); setTrigger(null) }
-  }, [onSubmit, onUndo, onRedo, trigger])
+  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, onSubmit, onUndo, onRedo })
 
   const commitAtomic = useCallback((atomic: Block) => {
     if (!trigger) return
@@ -75,12 +69,15 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
 
   const rootProps = useMemo(() => ({
     ref: (el: HTMLElement | null) => { elRef.current = el },
-    contentEditable: true,
+    contentEditable: !readOnly,
     role: 'textbox',
     'aria-multiline': multiline,
+    'aria-readonly': readOnly || undefined,
+    'aria-placeholder': placeholder,
+    'data-placeholder': placeholder,
     suppressContentEditableWarning: true,
     onKeyDown,
-  }) as HTMLAttributes<HTMLElement> & { ref: (el: HTMLElement | null) => void }, [onKeyDown, multiline])
+  }) as HTMLAttributes<HTMLElement> & { ref: (el: HTMLElement | null) => void }, [onKeyDown, multiline, readOnly, placeholder])
 
   const blockProps = useCallback((i: number): HTMLAttributes<HTMLElement> => {
     const b = doc.blocks[i]

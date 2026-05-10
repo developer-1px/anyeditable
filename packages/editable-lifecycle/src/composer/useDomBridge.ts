@@ -8,12 +8,13 @@ import { insertTextPatch } from './blockOps.js'
 import { resolveCaret } from './resolveCaret.js'
 import { resolveRange } from './resolveRange.js'
 import { getBlockText, projectText } from './projectText.js'
+import { docLength, isInsert } from './limits.js'
 
 export interface DomBridgeRefs {
   el: MutableRefObject<HTMLElement | null>
   caret: MutableRefObject<{ blockIdx: number; offset: number }>
   composing: MutableRefObject<boolean>
-  state: MutableRefObject<{ doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number }>
+  state: MutableRefObject<{ doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; maxLength: number | undefined }>
 }
 
 type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
@@ -27,7 +28,8 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
     if (!el) return
     const onBI = (e: Event) => {
       const ie = e as InputEvent
-      const { doc, ops } = refs.state.current
+      const { doc, ops, readOnly, maxLength } = refs.state.current
+      if (readOnly) { ie.preventDefault(); return }
       const sel = el.ownerDocument.getSelection()
       const dr = resolveRange(el, sel)
       const range = dr && !dr.collapsed
@@ -36,6 +38,7 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
       const r = handleBeforeInput(ie, { doc, caret: refs.caret.current, composing: refs.composing.current, range })
       if (!r) return
       if (r.preventDefault) ie.preventDefault()
+      if (maxLength !== undefined && isInsert(ie.inputType) && docLength(doc) >= maxLength) return
       if (r.patches.length) ops.apply(r.patches)
       refs.caret.current = r.nextCaret
       pushTrigger(refs, setTrigger, r.nextCaret, projectText(getBlockText(doc, r.nextCaret.blockIdx), ie))
