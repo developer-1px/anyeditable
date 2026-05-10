@@ -355,6 +355,22 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(cutText).toContain('@bob')
   })
 
+  test('Long rapid typing (200 chars) preserves order', async ({ page }) => {
+    const chars = 'abcdefghij'.repeat(20)
+    await page.keyboard.type(chars, { delay: 0 })
+    await expect(page.locator(ROOT)).toHaveText(chars)
+  })
+
+  test('Type-then-backspace cycles produce expected text', async ({ page }) => {
+    await type(page, 'one')
+    await page.keyboard.press('Backspace')
+    await type(page, 'TWO')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Backspace')
+    await type(page, 'X')
+    await expect(page.locator(ROOT)).toHaveText('onTX')
+  })
+
   test('Korean composition while popover open does not commit chip', async ({ page }) => {
     await type(page, '@bo')
     await expect(page.locator('.popover li')).toHaveCount(1)
