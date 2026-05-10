@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.3.2 — Hardening pass (caret clamp, sync-mirror SSOT, UX polish)
+
+### Fixed
+
+- **F28 stale caret out-of-range** — external doc shrink (Cmd+Z, `jd.ops.load`,
+  etc.) left `refs.caret.current` pointing past `doc.blocks.length`, generating
+  patches like `/blocks/4` against shorter arrays and throwing
+  `JsonCrudError: path_not_found` from zod-crud. `caretClamp.clampCaret` +
+  `clampRange` run on every `handleBI` / `handleCE` entry. `useSyncDocOps`
+  also drops invalid patch batches and warns rather than forwarding the throw.
+- **Mid-text trigger detection** — `projectText` slices around the caret
+  (including paste / drop / replacement-text) so typing `@` between existing
+  words actually fires the popover.
+- **Backspace at chip-right boundary** — caret lands at the end of the merged
+  prev-text block; `deleteBackwardPatch` / `deleteForwardPatch` collapse
+  adjacent text blocks flanking a removed atomic into one.
+- **maxLength forecasting** — pastes are rejected based on
+  `docLen − rangeLen + insertLen`, not the post-hoc check that let single
+  pastes overshoot.
+- **Multiline gate** — `multiline=false` actually suppresses
+  `insertLineBreak` / `insertParagraph` (was only an ARIA attribute).
+- **Escape sticks** — closing a trigger via Escape captures
+  `{blockIdx, startOffset}` into `stateRef.dismissed`; typing more within the
+  same anchor stays closed (Slack/Discord parity). Cleared when the boundary
+  breaks.
+- **Caret-move re-evaluation** — selectionchange re-runs `detectTrigger` via
+  `reEvalTrigger` so ArrowLeft past `@` closes the popover. Suppressed while
+  selection is non-collapsed.
+- **Multi-chip combobox focus** — `useTriggerCombobox` re-navigates to
+  `items[0]` when prior focus filters out, so a second `@al` after `@bo`
+  commit activates on Enter.
+- **Sync-mirror SSOT** — `commitAtomic` / clipboard / submit all read
+  `stateRef.current.doc`, not React state doc, so rapid type-then-action
+  never drops the last keystroke.
+- **IME composing flag** — reset on blur (OS doesn't guarantee
+  compositionend when focus is lost).
+- **Atomic-fallback rendering** — mention without `renderAtomic` shows
+  `@label` to match aria-label.
+
+### Added — internals
+
+- `caretClamp.ts`, `rangeOps.ts`, `editableProps.ts`, `editableTypes.ts`.
+
+### Added — public API
+
+- `label?: string` / `labelledBy?: string` on `useEditableComposer`.
+
+### Added — tests
+
+- 22 vitest files / 166 unit tests (was 7 / 62) — every composer module
+  under test. 66 Playwright e2e tests (was 49).
+
 ## 0.3.1 — Lexical-concept self DOM reconciler (한글 IME fix)
 
 ### Fixed
