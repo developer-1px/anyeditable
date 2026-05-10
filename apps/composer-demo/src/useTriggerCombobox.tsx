@@ -26,13 +26,18 @@ export function useTriggerCombobox(
   })
 
   const lastKey = useRef<string | null>(null)
+  const lastFirstId = useRef<string | null>(null)
   useEffect(() => {
-    if (!trigger || items.length === 0) { lastKey.current = null; return }
+    if (!trigger || items.length === 0) { lastKey.current = null; lastFirstId.current = null; return }
     const key = trigger.kind + ':' + trigger.blockIdx
-    if (key === lastKey.current) return
+    const firstId = items[0]!.id
+    const transitioned = key !== lastKey.current
+    const firstChanged = firstId !== lastFirstId.current
+    if (!transitioned && !firstChanged) return
     lastKey.current = key
-    dispatch({ type: 'open', id: ROOT, open: true })
-    dispatch({ type: 'navigate', id: items[0]!.id })
+    lastFirstId.current = firstId
+    if (transitioned) dispatch({ type: 'open', id: ROOT, open: true })
+    dispatch({ type: 'navigate', id: firstId })
   }, [trigger, items, dispatch])
 
   return cb
