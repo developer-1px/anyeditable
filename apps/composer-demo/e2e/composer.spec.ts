@@ -288,4 +288,37 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await type(page, 'hello')
     await expect(page.locator(ROOT)).toHaveText('hello')
   })
+
+  test('Paste plain text inserts at caret', async ({ page }) => {
+    await type(page, 'hi ')
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      const dt = new DataTransfer()
+      dt.setData('text/plain', 'pasted')
+      el.dispatchEvent(new InputEvent('beforeinput', {
+        inputType: 'insertFromPaste', data: null, dataTransfer: dt,
+        bubbles: true, cancelable: true,
+      }))
+    })
+    await expect(page.locator(ROOT)).toHaveText('hi pasted')
+  })
+
+  test('maxLength clamps further inserts (prod option)', async ({ page }) => {
+    // App.tsx sets maxLength: 500 — exceed it
+    const long = 'x'.repeat(501)
+    await page.keyboard.type(long, { delay: 0 })
+    const text = await page.locator(ROOT).textContent()
+    expect((text ?? '').length).toBeLessThanOrEqual(500)
+  })
+
+  test('Emoji input renders correctly', async ({ page }) => {
+    await type(page, 'hi ')
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      el.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: '👋', bubbles: true, cancelable: true }))
+    })
+    await expect(page.locator(ROOT)).toContainText('👋')
+  })
 })
