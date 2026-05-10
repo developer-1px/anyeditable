@@ -33,6 +33,9 @@
 | F22 | kernel UX | `minQueryLength` 옵션 | 자체 해결 (iter 24) |
 | F23 | a11y | `aria-multiline=true` (Shift+Enter 정합) | 자체 해결 (iter 25) |
 | F24 | tooling | `apps/composer-demo` Vite 실브라우저 smoke | 자체 해결 (iter 26) |
+| F25 | kernel arch | React reconcile vs contenteditable textNode → self DOM reconciler | 자체 해결 (iter 28, Lexical-concept) |
+| F26 | kernel race | React state batching across rapid keystrokes → `useSyncDocOps` | 자체 해결 (iter 29) |
+| F27 | aria-kernel API | combobox needs `<input onChange>` — primer for contenteditable | 자체 해결 + 후속 제안 (iter 30) |
 
 ### 6 issues filed (cross-package)
 
