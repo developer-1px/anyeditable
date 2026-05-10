@@ -17,10 +17,20 @@ export function resolveCaret(root: HTMLElement, selection: Selection | null): Do
   if (node === root) {
     const child = root.childNodes[selection.focusOffset] as HTMLElement | undefined
     const prev = root.childNodes[selection.focusOffset - 1] as HTMLElement | undefined
-    const idx = readIdx(child) ?? readIdx(prev)
-    if (idx === null) return null
-    // child 면 그 block 시작점, prev 면 prev block 다음 = idx+1 의미
-    return { blockIdx: child ? idx : idx + 1, offset: 0 }
+    if (child) {
+      const idx = readIdx(child)
+      return idx === null ? null : { blockIdx: idx, offset: 0 }
+    }
+    // No child at focusOffset → caret is AFTER prev. Map to end of prev block
+    // so range deletion stays within bounds (text: end-of-text; atomic: offset 1).
+    if (prev) {
+      const idx = readIdx(prev)
+      if (idx === null) return null
+      const isText = prev.dataset.blockKind === 'text'
+      const endOffset = isText ? (prev.firstChild?.nodeValue?.length ?? 0) : 1
+      return { blockIdx: idx, offset: endOffset }
+    }
+    return null
   }
   const blockEl = findBlockAncestor(node, root)
   if (!blockEl) return null

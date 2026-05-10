@@ -1,25 +1,8 @@
-import { useEffect, type MutableRefObject } from 'react'
-import type { AtomicKind, ComposerDoc } from './schema.js'
-import type { JsonOps } from './useEditableComposer.js'
-import type { TriggerHint } from './triggers.js'
-import type { CaretPos } from './useDocReconciler.js'
-import { detectTrigger } from './triggers.js'
-import { handleBeforeInput } from './handleBeforeInput.js'
-import { insertTextPatch } from './blockOps.js'
+import { useEffect } from 'react'
 import { resolveCaret } from './resolveCaret.js'
-import { resolveRange } from './resolveRange.js'
-import { getBlockText, projectText } from './projectText.js'
-import { docLength, isInsert } from './limits.js'
+import { handleBI, handleCE, type DomBridgeRefs, type SetTrigger } from './bridgeHandlers.js'
 
-export interface DomBridgeRefs {
-  el: MutableRefObject<HTMLElement | null>
-  caret: MutableRefObject<CaretPos>
-  pendingCaret: MutableRefObject<CaretPos | null>
-  composing: MutableRefObject<boolean>
-  state: MutableRefObject<{ doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; maxLength: number | undefined }>
-}
-
-type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
+export type { DomBridgeRefs } from './bridgeHandlers.js'
 
 /** WHATWG Input Events L2 + Selection API native bridge.
  *  IME: composing 동안 ops 보류 → compositionend `event.data` 단발 insertText.
@@ -28,39 +11,9 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
   useEffect(() => {
     const el = refs.el.current
     if (!el) return
-    const onBI = (e: Event) => {
-      const ie = e as InputEvent
-      const { doc, ops, readOnly, maxLength } = refs.state.current
-      if (readOnly) { ie.preventDefault(); return }
-      const sel = el.ownerDocument.getSelection()
-      const dr = resolveRange(el, sel)
-      const range = dr && !dr.collapsed
-        ? { startBlock: dr.start.blockIdx, startOffset: dr.start.offset, endBlock: dr.end.blockIdx, endOffset: dr.end.offset }
-        : null
-      const r = handleBeforeInput(ie, { doc, caret: refs.caret.current, composing: refs.composing.current, range })
-      if (!r) return
-      if (r.preventDefault) ie.preventDefault()
-      if (maxLength !== undefined && isInsert(ie.inputType) && docLength(doc) >= maxLength) return
-      if (r.patches.length) {
-        ops.apply(r.patches)
-        refs.pendingCaret.current = r.nextCaret
-      }
-      refs.caret.current = r.nextCaret
-      pushTrigger(refs, setTrigger, r.nextCaret, projectText(getBlockText(doc, r.nextCaret.blockIdx), ie))
-    }
+    const onBI = (e: Event) => handleBI(e as InputEvent, el, refs, setTrigger)
     const onCS = () => { refs.composing.current = true }
-    const onCE = (e: Event) => {
-      refs.composing.current = false
-      const text = (e as CompositionEvent).data ?? ''
-      if (!text) return
-      const { doc, ops } = refs.state.current
-      const c = refs.caret.current
-      ops.apply(insertTextPatch(doc.blocks, c.blockIdx, c.offset, text))
-      const next = { ...c, offset: c.offset + text.length }
-      refs.caret.current = next
-      refs.pendingCaret.current = next
-      pushTrigger(refs, setTrigger, next, getBlockText(doc, c.blockIdx) + text)
-    }
+    const onCE = (e: Event) => handleCE(e as CompositionEvent, refs, setTrigger)
     const onSel = () => {
       if (refs.composing.current) return
       const pos = resolveCaret(el, el.ownerDocument.getSelection())
@@ -85,15 +38,4 @@ export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void 
       el.ownerDocument.removeEventListener('selectionchange', onSel)
     }
   }, [refs, setTrigger])
-}
-
-function pushTrigger(
-  refs: DomBridgeRefs,
-  setTrigger: SetTrigger,
-  caret: CaretPos,
-  textProjection: string,
-): void {
-  const { triggers, minQueryLength } = refs.state.current
-  const hint = detectTrigger(textProjection, caret.offset, triggers, minQueryLength)
-  setTrigger(hint ? { ...hint, blockIdx: caret.blockIdx } : null)
 }
