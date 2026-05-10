@@ -88,6 +88,18 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator('.composer .chip')).toHaveCount(0)
   })
 
+  test('Type after Backspace-removed chip continues smoothly', async ({ page }) => {
+    await type(page, 'hi @bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+    await page.keyboard.press('Backspace')
+    await expect(page.locator('.composer .chip')).toHaveCount(0)
+    await type(page, 'X')
+    // 'hi ' + 'X' = 'hi X' (chip removed; caret left at end of 'hi ')
+    await expect(page.locator(ROOT)).toContainText('X')
+  })
+
   test('Enter submits doc and clears', async ({ page }) => {
     await type(page, 'hi there')
     await page.keyboard.press('Enter')
