@@ -7,6 +7,8 @@ import { useDomBridge } from './useDomBridge.js'
 import { usePendingCaret } from './usePendingCaret.js'
 import { useComposerKeys } from './composerKeys.js'
 import { useClipboard } from './useClipboard.js'
+import { serialize } from './serialize.js'
+import { rootPropsOf, blockPropsOf, atomicPropsOf } from './composerProps.js'
 
 export interface JsonOps {
   apply(patches: readonly Patch[]): void
@@ -25,7 +27,7 @@ export interface UseEditableComposerOptions {
   readOnly?: boolean  // contentEditable=false + skip beforeinput patches
   placeholder?: string  // data-placeholder attr — CSS `:empty::before { content: attr(data-placeholder) }`
   maxLength?: number  // total text length cap; inserts clipped (atomics counted as 1)
-  onSubmit?: () => void
+  onSubmit?: (payload: { doc: ComposerDoc; text: string }) => void
   onUndo?: () => boolean | void  // Cmd/Ctrl+Z
   onRedo?: () => boolean | void  // Cmd/Ctrl+Shift+Z
 }
@@ -54,8 +56,7 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   useDomBridge({ el: elRef, caret, composing, state: stateRef }, setTrigger)
   const docRef = useRef(doc); docRef.current = doc
   useClipboard(elRef, docRef)
-
-  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, onSubmit, onUndo, onRedo })
+  const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(doc, onSubmit), onUndo, onRedo })
 
   const commitAtomic = useCallback((atomic: Block) => {
     if (!trigger) return
@@ -70,30 +71,22 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
 
   const cancelTrigger = useCallback(() => setTrigger(null), [])
 
-  const rootProps = useMemo(() => ({
-    ref: (el: HTMLElement | null) => { elRef.current = el },
-    contentEditable: !readOnly,
-    role: 'textbox',
-    'aria-multiline': multiline,
-    'aria-readonly': readOnly || undefined,
-    'aria-placeholder': placeholder,
-    'data-placeholder': placeholder,
-    suppressContentEditableWarning: true,
-    onKeyDown,
-  }) as HTMLAttributes<HTMLElement> & { ref: (el: HTMLElement | null) => void }, [onKeyDown, multiline, readOnly, placeholder])
+  const rootProps = useMemo(() => rootPropsOf({
+    setRef: (el) => { elRef.current = el },
+    multiline, readOnly, placeholder, onKeyDown,
+  }), [onKeyDown, multiline, readOnly, placeholder])
 
-  const blockProps = useCallback((i: number): HTMLAttributes<HTMLElement> => {
-    const b = doc.blocks[i]
-    return { 'data-block-index': i, 'data-block-kind': b?.kind } as HTMLAttributes<HTMLElement>
-  }, [doc])
-
-  const atomicProps = useCallback((i: number): HTMLAttributes<HTMLElement> => {
-    const b = doc.blocks[i]
-    return {
-      contentEditable: false,
-      'aria-label': b?.kind === 'mention' ? b.label : b?.kind === 'command' ? '/' + b.name : undefined,
-    } as HTMLAttributes<HTMLElement>
-  }, [doc])
+  const blockProps = useCallback((i: number) => blockPropsOf(doc, i), [doc])
+  const atomicProps = useCallback((i: number) => atomicPropsOf(doc, i), [doc])
 
   return { rootProps, blockProps, atomicProps, trigger, commitAtomic, cancelTrigger }
+}
+
+function makeSubmit(doc: ComposerDoc, onSubmit?: UseEditableComposerOptions['onSubmit']): (() => void) | undefined {
+  if (!onSubmit) return undefined
+  return () => {
+    const text = serialize(doc)
+    if (!text) return  // empty-submit guard
+    onSubmit({ doc, text })
+  }
 }

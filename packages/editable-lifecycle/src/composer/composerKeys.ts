@@ -5,14 +5,14 @@ export interface KeyOpts {
   composing: { current: boolean }
   trigger: unknown
   setTrigger: (t: null) => void
-  onSubmit: (() => void) | undefined
+  submit: (() => void) | undefined
   onUndo: (() => boolean | void) | undefined
   onRedo: (() => boolean | void) | undefined
 }
 
 /** Composer 키 핸들러 — Cmd/Ctrl+Z undo/redo, Enter submit, Esc cancel trigger. */
 export function useComposerKeys(opts: KeyOpts) {
-  const { composing, trigger, setTrigger, onSubmit, onUndo, onRedo } = opts
+  const { composing, trigger, setTrigger, submit, onUndo, onRedo } = opts
   return useCallback((e: KeyboardEvent<HTMLElement>) => {
     if (e.defaultPrevented) return
     const mod = e.metaKey || e.ctrlKey
@@ -21,7 +21,7 @@ export function useComposerKeys(opts: KeyOpts) {
       if (handler) { e.preventDefault(); handler() }
       return
     }
-    if (e.key === 'Enter' && !e.shiftKey && !composing.current) { e.preventDefault(); onSubmit?.() }
+    if (e.key === 'Enter' && !e.shiftKey && !composing.current) { e.preventDefault(); submit?.() }
     else if (e.key === 'Escape' && trigger) { e.preventDefault(); setTrigger(null) }
-  }, [composing, trigger, setTrigger, onSubmit, onUndo, onRedo])
+  }, [composing, trigger, setTrigger, submit, onUndo, onRedo])
 }

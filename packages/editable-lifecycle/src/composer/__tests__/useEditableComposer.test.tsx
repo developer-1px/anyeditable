@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { useState } from 'react'
 import { useEditableComposer } from '../useEditableComposer.js'
-import { EMPTY_DOC } from '../schema.js'
+import { EMPTY_DOC, type ComposerDoc } from '../schema.js'
 import { Harness, makeOps } from './Harness.js'
 
 afterEach(() => cleanup())
@@ -85,7 +85,21 @@ describe('useEditableComposer DOM integration', () => {
     expect(root.getAttribute('role')).toBe('textbox')
   })
 
-  it('Enter without Shift fires onSubmit', () => {
+  it('Enter without Shift fires onSubmit with serialized payload', () => {
+    const onSubmit = vi.fn()
+    const seeded: ComposerDoc = { blocks: [{ kind: 'text', text: 'hi' }] }
+    function H() {
+      const [doc, setDoc] = useState(seeded)
+      const c = useEditableComposer({ doc, ops: makeOps(() => doc, setDoc), triggers: {} as Record<string, never>, onSubmit })
+      return <div data-testid="r" {...c.rootProps} />
+    }
+    const { getByTestId } = render(<H />)
+    fireEvent.keyDown(getByTestId('r'), { key: 'Enter' })
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).toHaveBeenCalledWith({ doc: seeded, text: 'hi' })
+  })
+
+  it('Enter on empty doc does NOT fire onSubmit (empty-submit guard)', () => {
     const onSubmit = vi.fn()
     function H() {
       const [doc, setDoc] = useState(EMPTY_DOC)
@@ -94,6 +108,6 @@ describe('useEditableComposer DOM integration', () => {
     }
     const { getByTestId } = render(<H />)
     fireEvent.keyDown(getByTestId('r'), { key: 'Enter' })
-    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })
