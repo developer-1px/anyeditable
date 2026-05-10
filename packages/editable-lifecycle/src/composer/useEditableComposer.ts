@@ -52,8 +52,8 @@ export function useEditableComposer(o: UseEditableComposerOptions): UseEditableC
   const caret = useRef<CaretPos>({ blockIdx: 0, offset: 0 })
   const pendingCaret = useRef<CaretPos | null>(null)
   const elRef = useRef<HTMLElement | null>(null)
-  const stateRef = useRef({ doc, ops, triggers, minQueryLength, readOnly, maxLength, dismissed: null as { blockIdx: number; startOffset: number } | null })
-  Object.assign(stateRef.current, { doc, triggers, minQueryLength, readOnly, maxLength })
+  const stateRef = useRef({ doc, ops, triggers, minQueryLength, readOnly, multiline, maxLength, dismissed: null as { blockIdx: number; startOffset: number } | null })
+  Object.assign(stateRef.current, { doc, triggers, minQueryLength, readOnly, multiline, maxLength })
   stateRef.current.ops = useSyncDocOps(ops, stateRef)
 
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])

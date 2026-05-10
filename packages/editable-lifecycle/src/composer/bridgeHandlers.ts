@@ -17,13 +17,14 @@ export interface DomBridgeRefs {
   caret: { current: CaretPos }
   pendingCaret: { current: CaretPos | null }
   composing: { current: boolean }
-  state: { current: { doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; maxLength: number | undefined; dismissed: { blockIdx: number; startOffset: number } | null } }
+  state: { current: { doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; multiline: boolean; maxLength: number | undefined; dismissed: { blockIdx: number; startOffset: number } | null } }
 }
 
 /** beforeinput dispatch — caret/range read from live Selection (not cached). */
 export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, setTrigger: SetTrigger): void {
-  const { doc, ops, readOnly, maxLength } = refs.state.current
+  const { doc, ops, readOnly, multiline, maxLength } = refs.state.current
   if (readOnly) { ie.preventDefault(); return }
+  if (!multiline && (ie.inputType === 'insertLineBreak' || ie.inputType === 'insertParagraph')) { ie.preventDefault(); return }
   const sel = el.ownerDocument.getSelection()
   const livePos = resolveCaret(el, sel)
   if (livePos) refs.caret.current = livePos
