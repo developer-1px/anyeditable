@@ -24,6 +24,16 @@ describe('deleteBackwardPatch', () => {
       { op: 'remove', path: '/blocks/1' },
     ])
   })
+  it('at offset 0 with atomic prev + text prevPrev → removes atomic and merges text', () => {
+    expect(deleteBackwardPatch([text('hi'), mention('@bob'), text('tail')], 2, 0)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'hitail' },
+      { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
+    ])
+  })
+  it('at offset 0 with no prev → noop', () => {
+    expect(deleteBackwardPatch([text('hi')], 0, 0)).toEqual([])
+  })
 })
 
 describe('deleteForwardPatch', () => {
