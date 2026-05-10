@@ -15,6 +15,7 @@ export interface UseEditableOptions<TId> {
 }
 
 type EditableEl = HTMLInputElement | HTMLTextAreaElement
+type SelectEl = HTMLSelectElement
 
 export interface InputProps {
   ref: RefCallback<EditableEl>
@@ -27,6 +28,14 @@ export interface InputProps {
 }
 
 export type CaretMode = 'end' | 'start' | 'select-all' | 'preserve'
+
+export interface SelectProps {
+  ref: RefCallback<SelectEl>
+  value: string
+  onChange: (e: ChangeEvent<SelectEl>) => void
+  onKeyDown: (e: KeyboardEvent<SelectEl>) => void
+  onBlur: (e: FocusEvent<SelectEl>) => void
+}
 
 const defaultCommitKeyMap = (e: KeyboardEvent): NavDir | 'commit-stay' | null => {
   if (e.key === 'Enter') return e.shiftKey ? 'up' : 'down'
@@ -149,9 +158,37 @@ export function useEditable<TId>(opts: UseEditableOptions<TId>) {
     },
   }
 
+  // Select element adapter: change commits immediately (with optional navigate),
+  // Escape cancels, blur commits without nav. Used for dropdown/list-pick UX
+  // where there is no "Enter to commit" — the single change is the commit.
+  const selectRef = useRef<SelectEl | null>(null)
+  const selectProps: SelectProps = {
+    ref: (el) => { selectRef.current = el },
+    value: draft,
+    onChange: (e) => {
+      const next = e.target.value
+      setDraft(next)
+      if (editing === null) return
+      onCommit(editing, next)
+      const navTarget = onNavigate ? onNavigate(editing, 'down') : null
+      setEditing(null)
+      if (navTarget !== null && navTarget !== undefined) setFocusId(navTarget)
+    },
+    onKeyDown: (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        cancelEdit()
+      }
+    },
+    onBlur: () => {
+      if (editing !== null) commitEdit()
+    },
+  }
+
   return {
     focusId,
     setFocusId,
+    selectProps,
     editing,
     draft,
     setDraft,
