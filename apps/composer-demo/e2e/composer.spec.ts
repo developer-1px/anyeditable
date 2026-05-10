@@ -133,6 +133,15 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator(ROOT)).toHaveText('next')
   })
 
+  test('Rapid type-then-Enter captures all chars (submit reads sync mirror)', async ({ page }) => {
+    // Burst many chars then immediately press Enter — submit must include ALL chars
+    // even if React state lagged the sync mirror by a tick.
+    await page.keyboard.type('abcdefghij', { delay: 0 })
+    await page.keyboard.press('Enter')
+    const submitted = await page.locator('.submitted').textContent()
+    expect(submitted).toContain('"text": "abcdefghij"')
+  })
+
   test('Type after doc shrinks via undo: caret clamped, no zod-crud out-of-range error', async ({ page }) => {
     let errorCaught: string | null = null
     page.on('pageerror', (e) => { errorCaught = e.message })
