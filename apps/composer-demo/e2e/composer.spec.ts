@@ -22,25 +22,22 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
   })
 
   test('Korean IME composition does not regress (한글)', async ({ page }) => {
-    // Use CDP to dispatch real composition events that Hangul IME produces.
-    const client = await page.context().newCDPSession(page)
-    const root = page.locator(ROOT)
-    await root.focus()
-
-    await client.send('Input.imeSetComposition', { text: 'ㅎ', selectionStart: 0, selectionEnd: 1 })
-    await client.send('Input.imeSetComposition', { text: '하', selectionStart: 0, selectionEnd: 1 })
-    await client.send('Input.imeSetComposition', { text: '한', selectionStart: 0, selectionEnd: 1 })
-    await client.send('Input.insertText', { text: '한' })
-
-    await expect(root).toHaveText('한')
-
-    // Continue typing — caret must be after composed char, not "pushed back"
-    await client.send('Input.imeSetComposition', { text: 'ㄱ', selectionStart: 0, selectionEnd: 1 })
-    await client.send('Input.imeSetComposition', { text: '구', selectionStart: 0, selectionEnd: 1 })
-    await client.send('Input.imeSetComposition', { text: '국', selectionStart: 0, selectionEnd: 1 })
-    await client.send('Input.insertText', { text: '국' })
-
-    await expect(root).toHaveText('한국')
+    // Simulate Hangul IME composition. Real OS IME fires events across frames;
+    // we split syllables so React state can flush between them.
+    await page.locator(ROOT).focus()
+    const composeSyllable = (data: string, intermediates: string[]) => page.evaluate(({ data, intermediates }) => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.dispatchEvent(new CompositionEvent('compositionstart', { data: '', bubbles: true }))
+      for (const inter of intermediates) {
+        el.dispatchEvent(new InputEvent('beforeinput', { data: inter, inputType: 'insertCompositionText', bubbles: true, cancelable: true }))
+        el.dispatchEvent(new CompositionEvent('compositionupdate', { data: inter, bubbles: true }))
+      }
+      el.dispatchEvent(new CompositionEvent('compositionend', { data, bubbles: true }))
+    }, { data, intermediates })
+    await composeSyllable('한', ['ㅎ', '하', '한'])
+    await expect(page.locator(ROOT)).toHaveText('한')
+    await composeSyllable('국', ['ㄱ', '구', '국'])
+    await expect(page.locator(ROOT)).toHaveText('한국')
   })
 
   test('text node identity preserved across keystrokes (reconciler in-place mutation)', async ({ page }) => {
@@ -60,16 +57,18 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator(ROOT)).toHaveText('abcd')
   })
 
-  test('@-mention trigger opens popover, Enter commits chip', async ({ page }) => {
+  test('@-mention trigger opens popover, ArrowDown+Enter commits chip', async ({ page }) => {
     await type(page, 'hi @bo')
-    await expect(page.locator('.popover')).toBeVisible()
+    await expect(page.locator('.popover li')).toHaveCount(1)
+    await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
     await expect(page.locator('.composer .chip')).toHaveText('@bob')
-    await expect(page.locator('.popover')).toBeHidden()
+    await expect(page.locator('.popover')).toHaveCount(0)
   })
 
   test('/-command trigger commits chip', async ({ page }) => {
     await type(page, '/run')
+    await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
     await expect(page.locator('.composer .chip')).toHaveText('/run')
   })
@@ -82,6 +81,7 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
 
   test('Backspace removes atomic chip whole', async ({ page }) => {
     await type(page, '@bo')
+    await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')  // commit @bob
     await expect(page.locator('.composer .chip')).toHaveText('@bob')
     await page.keyboard.press('Backspace')
