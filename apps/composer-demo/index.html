@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>editable-lifecycle · chat composer demo</title>
+    <style>
+      body { font: 14px/1.5 system-ui, -apple-system, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+      h1 { font-size: 1.2rem; }
+      .composer {
+        border: 1px solid #d0d7de; border-radius: 8px; padding: 0.75rem 1rem;
+        min-height: 3rem; outline: none; white-space: pre-wrap; line-height: 1.5;
+      }
+      .composer:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,.2); }
+      .chip {
+        display: inline-block; padding: 0 6px; margin: 0 1px; border-radius: 4px;
+        background: #ddf4ff; color: #0969da; font-weight: 500; user-select: none;
+      }
+      .chip[data-block-kind="command"] { background: #fff8c5; color: #59460e; }
+      .popover {
+        list-style: none; padding: 4px; margin: 4px 0 0; border: 1px solid #d0d7de;
+        border-radius: 6px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        max-width: 240px;
+      }
+      .popover li { padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+      .popover li[data-active=""] { background: #ddf4ff; }
+      .hint { color: #57606a; font-size: 0.85rem; margin-top: 1rem; }
+      .submitted { background: #f6f8fa; padding: 0.5rem 0.75rem; border-radius: 4px; font-family: ui-monospace, monospace; white-space: pre; font-size: 0.85rem; }
+    </style>
+  </head>
+  <body>
+    <h1>editable-lifecycle · chat composer (real-browser smoke)</h1>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
