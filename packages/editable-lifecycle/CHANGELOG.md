@@ -15,6 +15,12 @@
 - `onBI` caret race — handler가 `refs.caret.current` 캐시를 읽어 programmatic
   selection / click-to-position 후 stale. 매 beforeinput에서 live Selection을
   먼저 읽도록 변경.
+- Rapid-typing state batching reversal — React `setState` async batching이
+  같은 tick에 발생한 여러 beforeinput 핸들러에서 stale doc 읽기를 유발해
+  타이핑이 역순으로 적용되던 문제. `useSyncDocOps`가 zod-crud `applyPatch`로
+  synchronous doc snapshot을 유지하여 해소. e2e: synchronous 10-burst → "helloworld".
+- Mention `@@bob` double-prefix in serialize round-trip — schema 불변식 명문화:
+  `MentionBlock.label` / `CommandBlock.name`은 trigger prefix 없이 저장, serialize/render가 prefix 추가.
 
 ### Changed — public API (breaking)
 
@@ -28,6 +34,15 @@
 - `useDocReconciler` — 블록별 textContent diff + atomic block을 `createPortal`로
   렌더 (DecoratorNode-equivalent).
 - `bridgeHandlers` — `handleBI` / `handleCE` 추출 (100줄 규약 준수).
+- `useSyncDocOps` — user.ops.apply 래핑하여 zod-crud `applyPatch`로 동기 doc
+  snapshot 유지. onBI / compositionend / commitAtomic / cut 모두 라우팅.
+
+### Testing
+
+- jsdom contenteditable 단위 테스트 전부 삭제 (jsdom이 IME/Selection을 충실히
+  시뮬레이트하지 못함). 43개 Playwright e2e로 대체 — real Chromium에서
+  basic input, 한글 composition, click-position, range replace, paste, emoji,
+  Shift+Enter linebreak, blur-refocus, cut chip 등 검증.
 
 ## 0.3.0 — Chat composer kernel (dogfood)
 
