@@ -67,6 +67,9 @@ function ChatComposer({ users, onSend }) {
   const c = useEditableComposer({
     doc: jd.value, ops,
     triggers: { '@': 'mention', '/': 'command' },
+    renderAtomic: (b) => b.kind === 'mention'
+      ? <span className="chip">@{b.label}</span>
+      : <span className="chip">/{b.name}</span>,
     onSubmit: () => { onSend(jd.value); jd.ops.load(EMPTY_DOC) },
     onUndo: () => jd.history.undo(),
     onRedo: () => jd.history.redo(),
@@ -77,31 +80,37 @@ function ChatComposer({ users, onSend }) {
   const cb = useComboboxPattern(data, (e) => {
     if (e.type === 'activate') {
       const u = users.find(x => x.id === e.id)
-      if (u) c.commitAtomic({ kind: 'mention', id: u.id, label: '@' + u.name })
+      if (u) c.commitAtomic({ kind: 'mention', id: u.id, label: u.name })
     } else dispatch(e)
   })
 
   return (
-    <div {...c.rootProps} onKeyDown={(e) => {
-      if (c.trigger && /^(Arrow|Enter|Escape)/.test(e.key)) cb.comboboxProps.onKeyDown?.(e)
-      c.rootProps.onKeyDown?.(e)
-    }}>
-      {jd.value.blocks.map((b, i) =>
-        b.kind === 'text'
-          ? <span key={i} {...c.blockProps(i)}>{b.text}</span>
-          : <span key={i} {...c.blockProps(i)} {...c.atomicProps(i)}>
-              {b.kind === 'mention' ? b.label : '/' + b.name}
-            </span>
-      )}
-      {c.trigger && (
-        <ul {...cb.listboxProps}>
-          {cb.items.map(it => <li key={it.id} {...cb.optionProps(it.id)}>{String(it.label)}</li>)}
+    <>
+      <div
+        ref={c.containerRef}
+        {...c.containerProps}
+        onKeyDown={(e) => {
+          if (c.trigger && /^(Arrow|Enter|Escape)/.test(e.key)) cb.comboboxProps.onKeyDown?.(e)
+          c.containerProps.onKeyDown?.(e)
+        }}
+      />
+      {c.portals}
+      {c.trigger && items.length > 0 && (
+        <ul {...cb.listboxProps} hidden={false}>
+          {items.map(it => <li key={it.id} {...cb.optionProps(it.id)}>{String(it.label)}</li>)}
         </ul>
       )}
-    </div>
+    </>
   )
 }
 ```
+
+**v0.3.1 — Lexical-concept self DOM reconciler.** React only owns the
+container ref; the package mutates text nodes in-place via `nodeValue`
+to preserve native IME composition context. Atomic blocks render via
+`createPortal` (DecoratorNode-equivalent) so hosts keep React component
+freedom for chips. Fixes Korean (CJK) IME "글자 입력할 때마다 밀리는"
+regression and other smoothness bugs. See CHANGELOG.
 
 What you get:
 - **`@`/`/` trigger detection** with word-boundary rules (Slack/Discord 사실상 표준)
