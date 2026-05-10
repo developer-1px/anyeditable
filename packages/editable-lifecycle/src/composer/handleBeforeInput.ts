@@ -1,5 +1,5 @@
 import type { ComposerDoc } from './schema.js'
-import { deleteBackwardPatch, deleteForwardPatch, deleteRangePatch, type Patch } from './blockOps.js'
+import { deleteBackwardPatch, deleteForwardPatch, deleteRangePatch } from './blockOps.js'
 import { rangeDelete, rangeReplace, insertNoRange, type InputResult } from './inputHelpers.js'
 
 export interface BeforeInputCtx {
