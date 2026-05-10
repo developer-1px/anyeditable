@@ -1,4 +1,4 @@
-import { resolveCaret, type DocPos } from './resolveCaret.js'
+import { resolveNodeOffset, type DocPos } from './resolveCaret.js'
 
 export interface DocRange {
   start: DocPos
@@ -12,31 +12,16 @@ export interface DocRange {
  */
 export function resolveRange(root: HTMLElement, selection: Selection | null): DocRange | null {
   if (!selection || selection.rangeCount === 0) return null
-  const anchor = root.contains(selection.anchorNode)
-    ? resolveAt(root, selection.anchorNode!, selection.anchorOffset)
+  const anchor = selection.anchorNode && root.contains(selection.anchorNode)
+    ? resolveNodeOffset(root, selection.anchorNode, selection.anchorOffset)
     : null
-  const focus = root.contains(selection.focusNode)
-    ? resolveAt(root, selection.focusNode!, selection.focusOffset)
+  const focus = selection.focusNode && root.contains(selection.focusNode)
+    ? resolveNodeOffset(root, selection.focusNode, selection.focusOffset)
     : null
   if (!anchor || !focus) return null
   const [start, end] = order(anchor, focus)
   const collapsed = start.blockIdx === end.blockIdx && start.offset === end.offset
   return { start, end, collapsed }
-}
-
-function resolveAt(root: HTMLElement, node: Node, offset: number): DocPos | null {
-  const range = root.ownerDocument.createRange()
-  range.setStart(node, offset)
-  range.collapse(true)
-  const sel = root.ownerDocument.getSelection()
-  if (!sel) return null
-  const prev = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null
-  sel.removeAllRanges()
-  sel.addRange(range)
-  const pos = resolveCaret(root, sel)
-  sel.removeAllRanges()
-  if (prev) sel.addRange(prev)
-  return pos
 }
 
 function order(a: DocPos, b: DocPos): [DocPos, DocPos] {

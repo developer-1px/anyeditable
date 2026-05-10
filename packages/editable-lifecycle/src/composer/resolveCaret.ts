@@ -13,16 +13,20 @@ export function resolveCaret(root: HTMLElement, selection: Selection | null): Do
   if (!selection || selection.rangeCount === 0) return null
   const node = selection.focusNode
   if (!node || !root.contains(node)) return null
-  // 케이스 1: focusNode 가 root 자체이고 focusOffset 으로 인접 child 를 가리킴 (programmatic).
+  return resolveNodeOffset(root, node, selection.focusOffset)
+}
+
+/** Same logic as resolveCaret but takes (node, offset) directly — used by
+ *  resolveRange so it doesn't have to swap Selection ranges temporarily. */
+export function resolveNodeOffset(root: HTMLElement, node: Node, offset: number): DocPos | null {
+  if (!root.contains(node)) return null
   if (node === root) {
-    const child = root.childNodes[selection.focusOffset] as HTMLElement | undefined
-    const prev = root.childNodes[selection.focusOffset - 1] as HTMLElement | undefined
+    const child = root.childNodes[offset] as HTMLElement | undefined
+    const prev = root.childNodes[offset - 1] as HTMLElement | undefined
     if (child) {
       const idx = readIdx(child)
       return idx === null ? null : { blockIdx: idx, offset: 0 }
     }
-    // No child at focusOffset → caret is AFTER prev. Map to end of prev block
-    // so range deletion stays within bounds (text: end-of-text; atomic: offset 1).
     if (prev) {
       const idx = readIdx(prev)
       if (idx === null) return null
@@ -39,7 +43,7 @@ export function resolveCaret(root: HTMLElement, selection: Selection | null): Do
   if (blockEl.dataset.blockKind && blockEl.dataset.blockKind !== 'text') {
     return { blockIdx: idx, offset: 0 }
   }
-  return { blockIdx: idx, offset: selection.focusOffset }
+  return { blockIdx: idx, offset }
 }
 
 function readIdx(el: HTMLElement | undefined): number | null {
