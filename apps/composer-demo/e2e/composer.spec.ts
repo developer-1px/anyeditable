@@ -162,12 +162,17 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator('.popover li')).toHaveCount(1)
   })
 
-  // Note: "second activate via Enter after first chip" is a known limitation
-  // of aria-kernel's combobox state machine — after activate it goes closed
-  // and the composer (no <input onChange>) can't re-trigger the navigate→open
-  // path automatically. The popover IS visible (regression-protected above);
-  // selection via click works; only ArrowDown+Enter without re-typing is
-  // affected. Tracked in aria-kernel#xxx for a future fix.
+  test('Click popover option commits chip (alternative to ArrowDown+Enter)', async ({ page }) => {
+    await type(page, '@bo')
+    await expect(page.locator('.popover li')).toHaveCount(1)
+    await page.locator('.popover li').first().click()
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+  })
+
+  // Note: aria-kernel combobox state machine closes after activate and
+  // there's no <input onChange> from composer to re-trigger open. Popover
+  // visibility is regression-protected above; mouse click on option still
+  // commits second chip. ArrowDown+Enter activate-twice tracked separately.
 
   test('Backspace at chip boundary removes chip not preceding text', async ({ page }) => {
     await type(page, 'hi @bo')
