@@ -44,7 +44,8 @@ export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, s
     refs.pendingCaret.current = r.nextCaret
   }
   refs.caret.current = r.nextCaret
-  pushTrigger(refs, setTrigger, r.nextCaret, projectText(getBlockText(doc, r.nextCaret.blockIdx), ie))
+  const preCaret = livePos ?? refs.caret.current
+  pushTrigger(refs, setTrigger, r.nextCaret, projectText(getBlockText(doc, r.nextCaret.blockIdx), ie, preCaret.offset))
 }
 
 /** compositionend — IME 단발 commit 으로 모은 조합 결과 입력. */
@@ -58,7 +59,8 @@ export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: S
   const next = { ...c, offset: c.offset + text.length }
   refs.caret.current = next
   refs.pendingCaret.current = next
-  pushTrigger(refs, setTrigger, next, getBlockText(doc, c.blockIdx) + text)
+  const blockText = getBlockText(doc, c.blockIdx)
+  pushTrigger(refs, setTrigger, next, blockText.slice(0, c.offset) + text + blockText.slice(c.offset))
 }
 
 function insertSize(ie: InputEvent): number {

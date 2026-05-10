@@ -389,6 +389,14 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Trigger detected mid-text (caret in middle of word boundary)', async ({ page }) => {
+    await type(page, 'hello world')
+    // Move caret to between 'hello' and ' world' (offset 5)
+    for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowLeft')
+    await page.keyboard.type(' @bo', { delay: 0 })
+    await expect(page.locator('[role="listbox"]')).toBeVisible()
+  })
+
   test('maxLength forecasts paste size — single big paste cannot exceed limit', async ({ page }) => {
     await type(page, 'x'.repeat(450))
     const paste = 'y'.repeat(100) // would land at 550 without forecasting
