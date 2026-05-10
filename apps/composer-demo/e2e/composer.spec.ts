@@ -122,6 +122,18 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(errorCaught).toBeNull()
   })
 
+  test('Undo restores text after chip commit (chip → text)', async ({ page }) => {
+    await page.keyboard.type('@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter') // commit chip
+    await expect(page.locator(`${ROOT} .chip`)).toHaveCount(1)
+    await page.keyboard.press('ControlOrMeta+z')
+    // Chip removed; '@bo' text restored.
+    await expect(page.locator(`${ROOT} .chip`)).toHaveCount(0)
+    const text = await page.locator(ROOT).textContent()
+    expect(text).toBe('@bo')
+  })
+
   test('Cmd+Z actually undoes last patch (zod-crud round-trip)', async ({ page }) => {
     await type(page, 'abc')
     await expect(page.locator(ROOT)).toHaveText('abc')
