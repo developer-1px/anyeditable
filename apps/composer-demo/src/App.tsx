@@ -40,8 +40,8 @@ export function App() {
       ? <span className="chip">/{b.name}</span>
       : null,
     onSubmit: ({ doc: d, text }) => { setSubmitted({ doc: d, text }); jd.ops.load(EMPTY_DOC) },
-    onUndo: () => jd.history.undo(),
-    onRedo: () => jd.history.redo(),
+    onUndo: () => { jd.commands.undo() },
+    onRedo: () => { jd.commands.redo() },
   })
 
   const items = useMemo(() => {

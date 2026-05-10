@@ -4,7 +4,7 @@ import { useComboboxPattern } from '@p/aria-kernel/patterns'
 import { useEphemeralCollection } from 'editable-lifecycle'
 
 interface Trigger { kind: string; query: string; blockIdx: number }
-interface Item { id: string; label: string; name: string }
+interface Item { id: string; label: string; name: string; [k: string]: unknown }
 
 /** Wires aria-kernel combobox to a composer trigger:
  *  - filters items by trigger.query
