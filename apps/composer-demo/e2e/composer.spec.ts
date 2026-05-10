@@ -233,4 +233,59 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     for (let i = 0; i < 4; i++) await page.keyboard.press('Backspace')
     await expect(page.locator(ROOT)).toHaveText('')
   })
+
+  test('Delete (forward) removes char to the right', async ({ page }) => {
+    await type(page, 'abc')
+    await page.keyboard.press('Home')
+    await page.keyboard.press('Delete')
+    await expect(page.locator(ROOT)).toHaveText('bc')
+  })
+
+  test('Arrow navigation moves caret across chip without deleting', async ({ page }) => {
+    await type(page, '@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await type(page, ' end')
+    await expect(page.locator(ROOT)).toHaveText('@bob end')
+    await page.keyboard.press('Home')
+    for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight')
+    await type(page, '!')
+    // Caret should land somewhere not destroying the chip; chip count stays 1
+    await expect(page.locator('.composer .chip')).toHaveCount(1)
+  })
+
+  test('Selection across chip + type replaces both text and chip', async ({ page }) => {
+    await type(page, 'hi @bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await type(page, '!')
+    await expect(page.locator('.composer .chip')).toHaveCount(1)
+    // Select all then type — should replace chip + text with plain 'X'
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      const sel = window.getSelection()!
+      sel.removeAllRanges()
+      sel.addRange(range)
+    })
+    await type(page, 'X')
+    await expect(page.locator('.composer .chip')).toHaveCount(0)
+    await expect(page.locator(ROOT)).toHaveText('X')
+  })
+
+  test('Type → Backspace → Type produces clean sequence', async ({ page }) => {
+    await type(page, 'abc')
+    await page.keyboard.press('Backspace')
+    await type(page, 'XY')
+    await expect(page.locator(ROOT)).toHaveText('abXY')
+  })
+
+  test('Empty doc maintains caret after Backspace no-op', async ({ page }) => {
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Backspace')
+    await type(page, 'hello')
+    await expect(page.locator(ROOT)).toHaveText('hello')
+  })
 })
