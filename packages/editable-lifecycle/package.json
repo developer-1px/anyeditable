@@ -1,6 +1,6 @@
 {
   "name": "editable-lifecycle",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Headless inline-edit kernels for React. v0.2 useEditable (cell/single-line, IME-safe). v0.3 useEditableComposer (chat composer: contenteditable + @-mention + /-command + atomic chips, dogfooded with @p/aria-kernel + zod-crud). Vocabulary closed under W3C/IETF/WAI standards.",
   "type": "module",
   "license": "MIT",

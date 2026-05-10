@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.3.1 — Lexical-concept self DOM reconciler (한글 IME fix)
+
+### Fixed
+
+- 한글 IME "글자 입력할 때마다 밀리는" 현상 해소 — React reconciler가
+  contenteditable 안 텍스트 노드를 직접 mutation하지 못하게 격리. 자체
+  `useDocReconciler`가 `nodeValue` in-place 갱신으로 native composition
+  context를 보존. 검증: 38개 Playwright e2e 전부 통과 (real Chromium + 실제
+  `compositionstart`/`update`/`end` 이벤트 시퀀스 포함).
+- `resolveCaret` out-of-bounds — focus가 root past last child일 때 (`selectNodeContents` 등)
+  `{blockIdx: lastIdx+1, offset: 0}` 반환하여 range 패치가 존재하지 않는 블록을
+  참조하던 문제. 이제 `{lastIdx, endOffset}`으로 매핑.
+- `onBI` caret race — handler가 `refs.caret.current` 캐시를 읽어 programmatic
+  selection / click-to-position 후 stale. 매 beforeinput에서 live Selection을
+  먼저 읽도록 변경.
+
+### Changed — public API (breaking)
+
+- `rootProps` / `blockProps(i)` / `atomicProps(i)` → `containerRef` +
+  `containerProps` + `portals` + `renderAtomic` 옵션.
+- 호스트는 `<div ref={c.containerRef} {...c.containerProps} />` 한 줄 + `{c.portals}`만.
+  패키지가 내부 DOM 소유. (Lexical `<ContentEditable/>` 패턴.)
+
+### Added — internals
+
+- `useDocReconciler` — 블록별 textContent diff + atomic block을 `createPortal`로
+  렌더 (DecoratorNode-equivalent).
+- `bridgeHandlers` — `handleBI` / `handleCE` 추출 (100줄 규약 준수).
+
 ## 0.3.0 — Chat composer kernel (dogfood)
 
 3-패키지 가족(@p/aria-kernel + zod-crud + editable-lifecycle) 합성으로 chat composer
