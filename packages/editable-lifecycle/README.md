@@ -71,8 +71,8 @@ function ChatComposer({ users, onSend }) {
       ? <span className="chip">@{b.label}</span>
       : <span className="chip">/{b.name}</span>,
     onSubmit: () => { onSend(jd.value); jd.ops.load(EMPTY_DOC) },
-    onUndo: () => jd.history.undo(),
-    onRedo: () => jd.history.redo(),
+    onUndo: () => { jd.commands.undo() },
+    onRedo: () => { jd.commands.redo() },
   })
 
   const items = c.trigger ? users.filter(u => u.name.startsWith(c.trigger.query)) : []
