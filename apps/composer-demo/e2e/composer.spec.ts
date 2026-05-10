@@ -122,6 +122,17 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(errorCaught).toBeNull()
   })
 
+  test('Type after submit (doc reset) does not crash and inserts cleanly', async ({ page }) => {
+    await type(page, 'hello')
+    await page.keyboard.press('Enter') // submit, resets doc
+    await expect(page.locator('.submitted')).toBeVisible()
+    let errorCaught: string | null = null
+    page.on('pageerror', (e) => { errorCaught = e.message })
+    await type(page, 'next')
+    expect(errorCaught).toBeNull()
+    await expect(page.locator(ROOT)).toHaveText('next')
+  })
+
   test('Cross-chip range delete merges flanking text correctly', async ({ page }) => {
     await type(page, 'pre ')
     await page.keyboard.type('@bo')
