@@ -389,6 +389,15 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('Enter after chip-commit submits (popover-closed Enter behavior)', async ({ page }) => {
+    await page.keyboard.type('@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter') // commit
+    await page.keyboard.press('Enter') // submit
+    const submitted = await page.locator('.submitted').textContent()
+    expect(submitted).toContain('"text": "@bob"')
+  })
+
   test('Two consecutive chips render correctly', async ({ page }) => {
     await page.keyboard.type('@bo')
     await page.keyboard.press('ArrowDown')
