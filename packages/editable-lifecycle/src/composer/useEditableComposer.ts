@@ -59,7 +59,6 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])
   useDomBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)
   const docRef = useRef(doc); docRef.current = doc
-  // useClipboard uses wrappedOps so cut advances the synchronous snapshot.
   const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
   useClipboard(elRef, docRef, opsRef)
   const onKeyDown = useComposerKeys({ composing, trigger, setTrigger, submit: makeSubmit(doc, onSubmit), onUndo, onRedo })
@@ -68,9 +67,7 @@ export function useEditableComposer(opts: UseEditableComposerOptions): UseEditab
 
   const commitAtomic = useCallback((atomic: Block) => {
     if (!trigger) return
-    // Route through stateRef.current.ops (wrappedOps) so the synchronous
-    // doc snapshot advances — keystrokes immediately after commit see the
-    // post-commit blocks.
+    // wrappedOps via stateRef so the sync doc snapshot advances post-commit.
     stateRef.current.ops.apply(commitAtomicPatch(doc.blocks, trigger.blockIdx, trigger.startOffset, caret.current.offset, atomic))
     const next = { blockIdx: trigger.blockIdx + 2, offset: 0 }
     caret.current = next
