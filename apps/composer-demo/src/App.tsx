@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 import { useJsonDocument } from 'zod-crud'
-import { ROOT, type UiEvent } from '@p/aria-kernel'
-import { useComboboxPattern } from '@p/aria-kernel/patterns'
 import {
-  ComposerDoc, EMPTY_DOC, useEditableComposer, useEphemeralCollection,
+  ComposerDoc, EMPTY_DOC, useEditableComposer,
   type JsonOps,
 } from 'editable-lifecycle'
+import { useTriggerCombobox } from './useTriggerCombobox.js'
 
 const USERS = [
   { id: 'u1', label: 'Bob', name: 'bob' },
@@ -50,34 +49,12 @@ export function App() {
     const pool = c.trigger.kind === 'mention' ? USERS : COMMANDS
     return pool.filter(it => it.name.startsWith(c.trigger!.query))
   }, [c.trigger])
-  const [data, dispatch] = useEphemeralCollection(items)
-  const cb = useComboboxPattern(data, (e: UiEvent) => {
-    if (e.type === 'activate') {
-      const it = items.find(x => x.id === e.id)
-      if (!it) return
-      c.commitAtomic(c.trigger!.kind === 'mention'
-        ? { kind: 'mention', id: it.id, label: it.name }
-        : { kind: 'command', name: it.name })
-      return
-    }
-    dispatch(e)
-  })
 
-  // Each time a new trigger appears, prime the aria-kernel listbox: dispatch
-  // {open:true} + {navigate:first-item}. Composer doesn't fire <input onChange>
-  // so combobox's openOnType path is dormant; we drive open/focus directly.
-  const lastTriggerKey = useRef<string | null>(null)
-  useEffect(() => {
-    if (!c.trigger || items.length === 0) {
-      lastTriggerKey.current = null
-      return
-    }
-    const key = c.trigger.kind + ':' + c.trigger.blockIdx
-    if (key === lastTriggerKey.current) return
-    lastTriggerKey.current = key
-    dispatch({ type: 'open', id: ROOT, open: true })
-    dispatch({ type: 'navigate', id: items[0]!.id })
-  }, [c.trigger, items, dispatch])
+  const cb = useTriggerCombobox(c.trigger, items, (it) => {
+    c.commitAtomic(c.trigger!.kind === 'mention'
+      ? { kind: 'mention', id: it.id, label: it.name }
+      : { kind: 'command', name: it.name })
+  })
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!c.trigger) return
@@ -95,8 +72,6 @@ export function App() {
       />
       {c.portals}
       {c.trigger && items.length > 0 && (
-        // c.trigger drives visibility; aria-kernel's collapsed-by-default `hidden`
-        // is suppressed since the composer's keyboard never feeds an <input onChange>.
         <ul className="popover" {...cb.listboxProps} hidden={false}>
           {items.map(it => (
             <li key={it.id} {...cb.optionProps(it.id)}>{String(it.label ?? it.id)}</li>
