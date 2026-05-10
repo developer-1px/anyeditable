@@ -389,6 +389,18 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect((text ?? '').length).toBeLessThanOrEqual(500)
   })
 
+  test('maxLength forecasts paste size — single big paste cannot exceed limit', async ({ page }) => {
+    await type(page, 'x'.repeat(450))
+    const paste = 'y'.repeat(100) // would land at 550 without forecasting
+    await page.evaluate(async (data) => {
+      const dt = new DataTransfer()
+      dt.setData('text/plain', data)
+      document.querySelector('[role="textbox"]')?.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+    }, paste)
+    const text = await page.locator(ROOT).textContent()
+    expect((text ?? '').length).toBe(450)
+  })
+
   test('Shift+Enter inserts linebreak (multiline)', async ({ page }) => {
     await type(page, 'line1')
     await page.keyboard.press('Shift+Enter')

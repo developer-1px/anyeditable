@@ -8,7 +8,7 @@ import { insertTextPatch } from './blockOps.js'
 import { resolveCaret } from './resolveCaret.js'
 import { resolveRange } from './resolveRange.js'
 import { getBlockText, projectText } from './projectText.js'
-import { docLength, isInsert } from './limits.js'
+import { docLength, isInsert, rangeLength } from './limits.js'
 
 export type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
 
@@ -34,7 +34,11 @@ export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, s
   const r = handleBeforeInput(ie, { doc, caret: refs.caret.current, composing: refs.composing.current, range })
   if (!r) return
   if (r.preventDefault) ie.preventDefault()
-  if (maxLength !== undefined && isInsert(ie.inputType) && docLength(doc) >= maxLength) return
+  if (maxLength !== undefined && isInsert(ie.inputType)) {
+    const insertLen = insertSize(ie)
+    const removeLen = range ? rangeLength(doc, range) : 0
+    if (docLength(doc) - removeLen + insertLen > maxLength) return
+  }
   if (r.patches.length) {
     ops.apply(r.patches)
     refs.pendingCaret.current = r.nextCaret
@@ -55,6 +59,14 @@ export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: S
   refs.caret.current = next
   refs.pendingCaret.current = next
   pushTrigger(refs, setTrigger, next, getBlockText(doc, c.blockIdx) + text)
+}
+
+function insertSize(ie: InputEvent): number {
+  if (ie.inputType === 'insertLineBreak' || ie.inputType === 'insertParagraph') return 1
+  if (ie.inputType === 'insertFromPaste' || ie.inputType === 'insertFromDrop') {
+    return (ie as InputEvent & { dataTransfer?: DataTransfer }).dataTransfer?.getData('text/plain').length ?? 0
+  }
+  return (ie.data ?? '').length
 }
 
 function pushTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger, caret: CaretPos, textProjection: string): void {
