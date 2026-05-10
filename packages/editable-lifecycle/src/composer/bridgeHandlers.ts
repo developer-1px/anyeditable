@@ -9,6 +9,7 @@ import { resolveCaret } from './resolveCaret.js'
 import { resolveRange } from './resolveRange.js'
 import { getBlockText, projectText } from './projectText.js'
 import { docLength, isInsert, rangeLength } from './limits.js'
+import { clampCaret, insertSize } from './caretClamp.js'
 
 export type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
 
@@ -28,6 +29,9 @@ export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, s
   const sel = el.ownerDocument.getSelection()
   const livePos = resolveCaret(el, sel)
   if (livePos) refs.caret.current = livePos
+  // Clamp stale caret: doc may have shrunk via external undo / load / etc.
+  // without a selectionchange landing a fresh live position.
+  refs.caret.current = clampCaret(doc, refs.caret.current)
   const dr = resolveRange(el, sel)
   const range = dr && !dr.collapsed
     ? { startBlock: dr.start.blockIdx, startOffset: dr.start.offset, endBlock: dr.end.blockIdx, endOffset: dr.end.offset }
@@ -55,6 +59,7 @@ export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: S
   const text = e.data ?? ''
   if (!text) return
   const { doc, ops } = refs.state.current
+  refs.caret.current = clampCaret(doc, refs.caret.current)
   const c = refs.caret.current
   ops.apply(insertTextPatch(doc.blocks, c.blockIdx, c.offset, text))
   const next = { ...c, offset: c.offset + text.length }
@@ -62,14 +67,6 @@ export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: S
   refs.pendingCaret.current = next
   const blockText = getBlockText(doc, c.blockIdx)
   pushTrigger(refs, setTrigger, next, blockText.slice(0, c.offset) + text + blockText.slice(c.offset))
-}
-
-function insertSize(ie: InputEvent): number {
-  if (ie.inputType === 'insertLineBreak' || ie.inputType === 'insertParagraph') return 1
-  if (ie.inputType === 'insertFromPaste' || ie.inputType === 'insertFromDrop') {
-    return (ie as InputEvent & { dataTransfer?: DataTransfer }).dataTransfer?.getData('text/plain').length ?? 0
-  }
-  return (ie.data ?? '').length
 }
 
 /** Caret moved without input (arrow keys / click) — re-evaluate trigger from

@@ -133,6 +133,22 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator(ROOT)).toHaveText('next')
   })
 
+  test('Type after doc shrinks via undo: caret clamped, no zod-crud out-of-range error', async ({ page }) => {
+    let errorCaught: string | null = null
+    page.on('pageerror', (e) => { errorCaught = e.message })
+    // Build up a multi-block doc.
+    await type(page, '@bo')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await type(page, ' tail')
+    // Now doc = [text(''), chip, text(' tail')] — caret at blockIdx=2, offset=5.
+    // Roll back multiple times — doc shrinks below the cached caret blockIdx.
+    for (let i = 0; i < 10; i++) await page.keyboard.press('ControlOrMeta+z')
+    // Type after the rollback — caret may still point at blockIdx 2 or 4.
+    await type(page, 'x')
+    expect(errorCaught).toBeNull()
+  })
+
   test('Cross-chip range delete merges flanking text correctly', async ({ page }) => {
     await type(page, 'pre ')
     await page.keyboard.type('@bo')
