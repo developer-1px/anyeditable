@@ -107,6 +107,21 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator(ROOT)).toHaveText('')
   })
 
+  test('Cmd+Z handler does not throw (jd.commands.undo wired)', async ({ page }) => {
+    // Earlier this called jd.history.undo() which is undefined → TypeError.
+    // Synthetic dispatch would silently skip React, but real keyboard would
+    // have crashed. Now wired to jd.commands.undo.
+    await type(page, 'abc')
+    let errorCaught: string | null = null
+    page.on('pageerror', (e) => { errorCaught = e.message })
+    await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      el.focus()
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', metaKey: true, bubbles: true, cancelable: true }))
+    })
+    expect(errorCaught).toBeNull()
+  })
+
   test('zod-crud history wired (composerKeys onUndo path)', async ({ page }) => {
     await type(page, 'abc')
     await expect(page.locator(ROOT)).toHaveText('abc')
