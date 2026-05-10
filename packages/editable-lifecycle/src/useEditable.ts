@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import type { KeyboardEvent, ChangeEvent, CompositionEvent, FocusEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent, ChangeEvent, CompositionEvent, FocusEvent, RefCallback } from 'react'
 
 export type NavDir = 'down' | 'up' | 'left' | 'right'
 
@@ -14,14 +14,19 @@ export interface UseEditableOptions<TId> {
   commitKeyMap?: (e: KeyboardEvent) => NavDir | 'commit-stay' | null
 }
 
+type EditableEl = HTMLInputElement | HTMLTextAreaElement
+
 export interface InputProps {
+  ref: RefCallback<EditableEl>
   value: string
-  onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
-  onKeyDown: (e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void
-  onCompositionStart: (e: CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => void
-  onCompositionEnd: (e: CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => void
-  onBlur: (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  onChange: (e: ChangeEvent<EditableEl>) => void
+  onKeyDown: (e: KeyboardEvent<EditableEl>) => void
+  onCompositionStart: (e: CompositionEvent<EditableEl>) => void
+  onCompositionEnd: (e: CompositionEvent<EditableEl>) => void
+  onBlur: (e: FocusEvent<EditableEl>) => void
 }
+
+export type CaretMode = 'end' | 'start' | 'select-all' | 'preserve'
 
 const defaultCommitKeyMap = (e: KeyboardEvent): NavDir | 'commit-stay' | null => {
   if (e.key === 'Enter') return e.shiftKey ? 'up' : 'down'
@@ -46,11 +51,16 @@ export function useEditable<TId>(opts: UseEditableOptions<TId>) {
   const [editing, setEditing] = useState<TId | null>(null)
   const [draft, setDraft] = useState('')
   const composingRef = useRef(false)
+  const elRef = useRef<EditableEl | null>(null)
+  const caretModeRef = useRef<CaretMode>('end')
 
   const startEdit = useCallback(
-    (id: TId, prefill?: string) => {
+    (id: TId, prefill?: string, opts?: { caret?: CaretMode }) => {
       setEditing(id)
       setDraft(prefill !== undefined ? prefill : getValue(id))
+      // Type-to-edit (prefill given) → caret-end so the next keystroke continues the word.
+      // F2/double-click (no prefill) → caret-end by Google Sheets convention.
+      caretModeRef.current = opts?.caret ?? 'end'
     },
     [getValue],
   )
@@ -90,7 +100,27 @@ export function useEditable<TId>(opts: UseEditableOptions<TId>) {
     [editing, startEdit],
   )
 
+  // Auto-focus + caret placement when entering edit mode. Runs after the input mounts
+  // because the ref is set before this effect fires (RefCallback runs in commit phase).
+  useEffect(() => {
+    if (editing === null) return
+    const el = elRef.current
+    if (!el) return
+    el.focus()
+    const len = el.value.length
+    const mode = caretModeRef.current
+    if (mode === 'end') el.setSelectionRange(len, len)
+    else if (mode === 'start') el.setSelectionRange(0, 0)
+    else if (mode === 'select-all') el.setSelectionRange(0, len)
+    // 'preserve' → leave whatever the browser set
+  }, [editing])
+
+  const setEl: RefCallback<EditableEl> = (el) => {
+    elRef.current = el
+  }
+
   const inputProps: InputProps = {
+    ref: setEl,
     value: draft,
     onChange: (e) => setDraft(e.target.value),
     onKeyDown: (e) => {
@@ -131,5 +161,7 @@ export function useEditable<TId>(opts: UseEditableOptions<TId>) {
     handleTypeToEdit,
     inputProps,
     isComposing: composingRef.current,
+    /** Direct access to the focused editable element. Most consumers won't need this. */
+    inputElement: elRef,
   }
 }

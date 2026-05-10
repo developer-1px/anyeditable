@@ -28,7 +28,9 @@ function Harness(props: HarnessProps) {
       <button onClick={() => ed.startEdit('a')}>start</button>
       <button onClick={() => ed.cancelEdit()}>cancel</button>
       <button onClick={() => ed.commitEdit()}>commit</button>
-      {ed.editing && <input data-testid="input" {...ed.inputProps} autoFocus />}
+      <button onClick={() => ed.startEdit('a', undefined, { caret: 'select-all' })}>start-selectall</button>
+      <button onClick={() => ed.startEdit('a', undefined, { caret: 'start' })}>start-start</button>
+      {ed.editing && <input data-testid="input" {...ed.inputProps} />}
     </div>
   )
 }
@@ -137,6 +139,37 @@ describe('useEditable', () => {
     const r = render(<Harness values={{ a: '' }} onCommit={vi.fn()} />)
     fireEvent.keyDown(r.getByTestId('root'), { key: 'ㅎ', keyCode: 229 })
     expect(r.getByTestId('state').textContent).toBe('idle')
+  })
+
+  it('auto-focuses input on edit start', () => {
+    const r = render(<Harness values={{ a: 'hi' }} onCommit={vi.fn()} />)
+    fireEvent.click(r.getByText('start'))
+    const input = r.getByTestId('input') as HTMLInputElement
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('caret defaults to end of value (Google Sheets F2 behavior)', () => {
+    const r = render(<Harness values={{ a: 'hello' }} onCommit={vi.fn()} />)
+    fireEvent.click(r.getByText('start'))
+    const input = r.getByTestId('input') as HTMLInputElement
+    expect(input.selectionStart).toBe(5)
+    expect(input.selectionEnd).toBe(5)
+  })
+
+  it('caret select-all mode selects whole value', () => {
+    const r = render(<Harness values={{ a: 'hello' }} onCommit={vi.fn()} />)
+    fireEvent.click(r.getByText('start-selectall'))
+    const input = r.getByTestId('input') as HTMLInputElement
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(5)
+  })
+
+  it('caret start mode places cursor at beginning', () => {
+    const r = render(<Harness values={{ a: 'hello' }} onCommit={vi.fn()} />)
+    fireEvent.click(r.getByText('start-start'))
+    const input = r.getByTestId('input') as HTMLInputElement
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(0)
   })
 
   it('blur commits without navigation', () => {
