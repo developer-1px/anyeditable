@@ -11,6 +11,21 @@ describe('insertTextPatch', () => {
       { op: 'replace', path: '/blocks/0/text', value: 'helXlo' },
     ])
   })
+  it('caret on atomic offset=1 → routes to next text block', () => {
+    expect(insertTextPatch([text('hi'), mention('bob'), text(' tail')], 1, 1, 'X')).toEqual([
+      { op: 'replace', path: '/blocks/2/text', value: 'X tail' },
+    ])
+  })
+  it('caret on atomic offset=0 → routes to prev text block (append)', () => {
+    expect(insertTextPatch([text('hi'), mention('bob'), text(' tail')], 1, 0, 'X')).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'hiX' },
+    ])
+  })
+  it('caret on lone atomic → adds new text block at side', () => {
+    expect(insertTextPatch([mention('bob')], 0, 1, 'X')).toEqual([
+      { op: 'add', path: '/blocks/1', value: { kind: 'text', text: 'X' } },
+    ])
+  })
 })
 
 describe('deleteBackwardPatch', () => {

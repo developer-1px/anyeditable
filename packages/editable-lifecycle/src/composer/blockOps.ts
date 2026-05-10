@@ -12,15 +12,16 @@ export function insertTextPatch(blocks: readonly Block[], blockIdx: number, offs
   const b = blocks[blockIdx]
   if (!b) return [{ op: 'add', path: `/blocks/${blockIdx}`, value: { kind: 'text', text } }]
   if (b.kind !== 'text') {
-    // Caret on an atomic chip: offset 0 = before chip, offset 1 = after chip.
-    // Insert into the adjacent text block if one exists, otherwise create one.
-    const targetIdx = offset > 0 ? blockIdx + 1 : blockIdx
-    const adj = blocks[targetIdx]
+    // Caret on atomic chip: offset 0 = before, offset 1 = after. Merge into
+    // the adjacent text block on that side; create one if it doesn't exist.
+    const afterSide = offset > 0
+    const targetIdx = afterSide ? blockIdx + 1 : blockIdx - 1
+    const adj = targetIdx >= 0 ? blocks[targetIdx] : undefined
     if (adj?.kind === 'text') {
-      const insertAt = offset > 0 ? 0 : adj.text.length
+      const insertAt = afterSide ? 0 : adj.text.length
       return [{ op: 'replace', path: `/blocks/${targetIdx}/text`, value: adj.text.slice(0, insertAt) + text + adj.text.slice(insertAt) }]
     }
-    return [{ op: 'add', path: `/blocks/${targetIdx}`, value: { kind: 'text', text } }]
+    return [{ op: 'add', path: `/blocks/${afterSide ? blockIdx + 1 : blockIdx}`, value: { kind: 'text', text } }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset) + text + b.text.slice(offset) }]
 }
