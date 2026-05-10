@@ -12,7 +12,10 @@
         min-height: 3rem; outline: none; white-space: pre-wrap; line-height: 1.5;
       }
       .composer:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,.2); }
-      .composer:empty::before { content: attr(data-placeholder); color: #8c959f; pointer-events: none; }
+      .composer:empty::before,
+      .composer:has(> [data-block-kind="text"]:only-child:empty)::before {
+        content: attr(data-placeholder); color: #8c959f; pointer-events: none;
+      }
       .chip {
         display: inline-block; padding: 0 6px; margin: 0 1px; border-radius: 4px;
         background: #ddf4ff; color: #0969da; font-weight: 500; user-select: none;

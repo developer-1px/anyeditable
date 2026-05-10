@@ -118,6 +118,22 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     expect(placeholder).toBeTruthy()
   })
 
+  test('placeholder reappears after delete-all', async ({ page }) => {
+    // Verifies the :has(> :only-child:empty) CSS branch — after typing and
+    // deleting all chars, the empty text block triggers the prompt again.
+    await type(page, 'hi')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Backspace')
+    // Composer text node is empty; placeholder pseudo-element should render
+    const before = await page.evaluate(() => {
+      const el = document.querySelector('.composer') as HTMLElement
+      const style = window.getComputedStyle(el, '::before')
+      return { content: style.content, display: style.display }
+    })
+    expect(before.content).not.toBe('none')
+    expect(before.content).not.toBe('')
+  })
+
   test('typing continues after committed chip', async ({ page }) => {
     await type(page, 'hi @bo')
     await page.keyboard.press('ArrowDown')
