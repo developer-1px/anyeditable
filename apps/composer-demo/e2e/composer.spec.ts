@@ -207,6 +207,13 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator('.composer .chip')).toHaveText('@bob')
   })
 
+  test('first chip: Enter alone commits (no ArrowDown needed — listbox primed)', async ({ page }) => {
+    await type(page, '@bo')
+    await expect(page.locator('.popover li')).toHaveCount(1)
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.composer .chip')).toHaveText('@bob')
+  })
+
   test('multiple chips: second commit via Enter (primed listbox)', async ({ page }) => {
     await type(page, '@bo')
     await page.keyboard.press('Enter')
