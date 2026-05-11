@@ -39,6 +39,10 @@ describe('projectText', () => {
   it('unknown inputType → returns text unchanged', () => {
     expect(projectText('hi', ie('formatBold'), 1)).toBe('hi')
   })
+  it('insertLineBreak / insertParagraph are not projected (handled by host)', () => {
+    expect(projectText('ab', ie('insertLineBreak'), 1)).toBe('ab')
+    expect(projectText('ab', ie('insertParagraph'), 1)).toBe('ab')
+  })
 })
 
 describe('getBlockText', () => {
