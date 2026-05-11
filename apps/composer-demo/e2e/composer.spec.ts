@@ -501,6 +501,18 @@ test.describe('Composer e2e — real browser, real contenteditable', () => {
     await expect(page.locator('[role="listbox"]')).toBeHidden()
   })
 
+  test('Backspace through @ then retype reopens popover (dismissed cleared)', async ({ page }) => {
+    await page.keyboard.type('@bo')
+    await expect(page.locator('[role="listbox"]')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[role="listbox"]')).toBeHidden()
+    // Backspace 3 times: remove '@bo' entirely
+    for (let i = 0; i < 3; i++) await page.keyboard.press('Backspace')
+    await page.keyboard.type('@bo')
+    // Fresh trigger at same offset — must reopen
+    await expect(page.locator('[role="listbox"]')).toBeVisible()
+  })
+
   test('Escape closes popover; further typing within same trigger does not reopen', async ({ page }) => {
     await page.keyboard.type('@bo')
     await expect(page.locator('[role="listbox"]')).toBeVisible()
