@@ -56,10 +56,15 @@ export function rangeReplace(
     for (let i = range.endBlock; i >= range.startBlock; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
     return { patches, nextCaret: { blockIdx: range.startBlock - 1, offset: prev.text.length + startText.length + data.length }, preventDefault: true }
   }
-  const merged = startText + data + endText
+  // When endB is atomic + next is text, fold next into the merged text too
+  // (otherwise after we remove blocks[sb+1..eb], next would land adjacent to sb).
+  const next = doc.blocks[range.endBlock + 1]
+  const foldNext = sb?.kind === 'text' && eb && eb.kind !== 'text' && next?.kind === 'text'
+  const merged = startText + data + endText + (foldNext ? (next as { text: string }).text : '')
   const patches: Patch[] = []
   if (sb?.kind === 'text') patches.push({ op: 'replace', path: `/blocks/${range.startBlock}/text`, value: merged })
   else patches.push({ op: 'replace', path: `/blocks/${range.startBlock}`, value: { kind: 'text', text: merged } })
-  for (let i = range.endBlock; i > range.startBlock; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
+  const removeUpTo = foldNext ? range.endBlock + 1 : range.endBlock
+  for (let i = removeUpTo; i > range.startBlock; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
   return { patches, nextCaret: { blockIdx: range.startBlock, offset: startText.length + data.length }, preventDefault: true }
 }
