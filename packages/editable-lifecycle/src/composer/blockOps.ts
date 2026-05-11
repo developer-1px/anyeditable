@@ -33,16 +33,22 @@ export function deleteBackwardPatch(blocks: readonly Block[], blockIdx: number, 
   if (offset <= 0) {
     const prev = blocks[blockIdx - 1]
     if (!prev) return []
-    // Removing an atomic between two text blocks merges them; otherwise just drop prev.
-    const prevPrev = blocks[blockIdx - 2]
-    if (prev.kind !== 'text' && prevPrev?.kind === 'text') {
-      return [
-        { op: 'replace', path: `/blocks/${blockIdx - 2}/text`, value: prevPrev.text + b.text },
-        { op: 'remove', path: `/blocks/${blockIdx}` },
-        { op: 'remove', path: `/blocks/${blockIdx - 1}` },
-      ]
+    // prev=atomic between text blocks → remove atomic and merge flanking texts.
+    if (prev.kind !== 'text') {
+      const prevPrev = blocks[blockIdx - 2]
+      if (prevPrev?.kind === 'text') {
+        return [
+          { op: 'replace', path: `/blocks/${blockIdx - 2}/text`, value: prevPrev.text + b.text },
+          { op: 'remove', path: `/blocks/${blockIdx}` },
+          { op: 'remove', path: `/blocks/${blockIdx - 1}` },
+        ]
+      }
+      return [{ op: 'remove', path: `/blocks/${blockIdx - 1}` }]
     }
-    return [{ op: 'remove', path: `/blocks/${blockIdx - 1}` }]
+    // prev=text (adjacent-text invariant transient): delete last char of prev,
+    // not the whole block. Empty prev gets removed.
+    if (prev.text.length === 0) return [{ op: 'remove', path: `/blocks/${blockIdx - 1}` }]
+    return [{ op: 'replace', path: `/blocks/${blockIdx - 1}/text`, value: prev.text.slice(0, -1) }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset - 1) + b.text.slice(offset) }]
 }

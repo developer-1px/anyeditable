@@ -49,6 +49,16 @@ describe('deleteBackwardPatch', () => {
   it('at offset 0 with no prev → noop', () => {
     expect(deleteBackwardPatch([text('hi')], 0, 0)).toEqual([])
   })
+  it('at offset 0 with prev=text → delete last char of prev (not whole block)', () => {
+    expect(deleteBackwardPatch([text('hi'), text('world')], 1, 0)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'h' },
+    ])
+  })
+  it('at offset 0 with empty prev=text → remove prev', () => {
+    expect(deleteBackwardPatch([text(''), text('world')], 1, 0)).toEqual([
+      { op: 'remove', path: '/blocks/0' },
+    ])
+  })
 })
 
 describe('deleteForwardPatch', () => {
