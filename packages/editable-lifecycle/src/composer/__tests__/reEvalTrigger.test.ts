@@ -40,4 +40,24 @@ describe('reEvalTrigger', () => {
     reEvalTrigger(r, vi.fn())
     expect(r.state.current.dismissed).toBeNull()
   })
+
+  it('dismissed cleared when anchor char no longer matches a trigger', () => {
+    const r = refs({
+      doc: { blocks: [{ kind: 'text', text: 'x@bob' }] } as ComposerDoc,
+      dismissed: { blockIdx: 0, startOffset: 0 }, // anchor was at idx 0, but now char[0]='x' not '@'
+    })
+    r.caret.current = { blockIdx: 0, offset: 5 }
+    reEvalTrigger(r, vi.fn())
+    expect(r.state.current.dismissed).toBeNull()
+  })
+
+  it('dismissed cleared when block no longer exists (doc shrunk)', () => {
+    const r = refs({
+      doc: { blocks: [{ kind: 'text', text: 'hi' }] } as ComposerDoc,
+      dismissed: { blockIdx: 9, startOffset: 0 },
+    })
+    r.caret.current = { blockIdx: 0, offset: 2 }
+    reEvalTrigger(r, vi.fn())
+    expect(r.state.current.dismissed).toBeNull()
+  })
 })
