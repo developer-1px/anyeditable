@@ -12,13 +12,14 @@ import { deleteRangePatch } from './blockOps.js'
  *  the browser's default delete, so we issue the patch ourselves). */
 export function useClipboard(
   elRef: MutableRefObject<HTMLElement | null>,
-  docRef: MutableRefObject<ComposerDoc> | { current: { doc: ComposerDoc } },
+  docRef: MutableRefObject<ComposerDoc> | { current: { doc: ComposerDoc; readOnly?: boolean } },
   opsRef: MutableRefObject<JsonOps>,
 ): void {
   useEffect(() => {
     const el = elRef.current
     if (!el) return
     const getDoc = (): ComposerDoc => 'doc' in docRef.current ? (docRef.current as { doc: ComposerDoc }).doc : (docRef.current as ComposerDoc)
+    const isReadOnly = (): boolean => 'doc' in docRef.current ? (docRef.current as { readOnly?: boolean }).readOnly === true : false
     const handler = (e: ClipboardEvent) => {
       if (!e.clipboardData) return
       const sel = el.ownerDocument.getSelection()
@@ -28,7 +29,8 @@ export function useClipboard(
       const r = { startBlock: dr.start.blockIdx, startOffset: dr.start.offset, endBlock: dr.end.blockIdx, endOffset: dr.end.offset }
       e.clipboardData.setData('text/plain', serializeRange(doc, r))
       e.preventDefault()
-      if (e.type === 'cut') {
+      // cut on readOnly: clipboard write only, no mutation.
+      if (e.type === 'cut' && !isReadOnly()) {
         opsRef.current.apply(deleteRangePatch(doc.blocks, r.startBlock, r.startOffset, r.endBlock, r.endOffset))
       }
     }
