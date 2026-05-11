@@ -32,6 +32,19 @@ describe('rangeReplace', () => {
     ])
   })
 
+  it('foldPrev: startB=atomic + prev=text → merges insert into prev', () => {
+    const r = rangeReplace(
+      { blocks: [{ kind: 'text', text: 'pre' }, { kind: 'mention', id: 'u', label: 'x' }, { kind: 'text', text: 'tail' }] },
+      { startBlock: 1, startOffset: 0, endBlock: 1, endOffset: 1 },
+      'Z',
+    )
+    expect(r.patches).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'preZtail' },
+      { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
+    ])
+  })
+
   it('cross-block: collapses to single merged text block', () => {
     const r = rangeReplace(
       { blocks: [text('hello'), text('atomic-placeholder'), text('world')] },
