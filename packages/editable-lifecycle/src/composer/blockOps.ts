@@ -29,7 +29,7 @@ export function insertTextPatch(blocks: readonly Block[], blockIdx: number, offs
 export function deleteBackwardPatch(blocks: readonly Block[], blockIdx: number, offset: number): Patch[] {
   const b = blocks[blockIdx]
   if (!b) return []
-  if (b.kind !== 'text') return [{ op: 'remove', path: `/blocks/${blockIdx}` }]
+  if (b.kind !== 'text') return removeAtomicMergingFlanks(blocks, blockIdx)
   if (offset <= 0) {
     const prev = blocks[blockIdx - 1]
     if (!prev) return []
@@ -56,7 +56,7 @@ export function deleteBackwardPatch(blocks: readonly Block[], blockIdx: number, 
 export function deleteForwardPatch(blocks: readonly Block[], blockIdx: number, offset: number): Patch[] {
   const b = blocks[blockIdx]
   if (!b) return []
-  if (b.kind !== 'text') return [{ op: 'remove', path: `/blocks/${blockIdx}` }]
+  if (b.kind !== 'text') return removeAtomicMergingFlanks(blocks, blockIdx)
   if (offset >= b.text.length) {
     const next = blocks[blockIdx + 1]
     if (!next) return []
@@ -76,6 +76,20 @@ export function deleteForwardPatch(blocks: readonly Block[], blockIdx: number, o
     return [{ op: 'replace', path: `/blocks/${blockIdx + 1}/text`, value: next.text.slice(1) }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset) + b.text.slice(offset + 1) }]
+}
+
+/** Remove atomic at blockIdx; if both flanks are text blocks, merge them. */
+function removeAtomicMergingFlanks(blocks: readonly Block[], blockIdx: number): Patch[] {
+  const prev = blocks[blockIdx - 1]
+  const next = blocks[blockIdx + 1]
+  if (prev?.kind === 'text' && next?.kind === 'text') {
+    return [
+      { op: 'replace', path: `/blocks/${blockIdx - 1}/text`, value: prev.text + next.text },
+      { op: 'remove', path: `/blocks/${blockIdx + 1}` },
+      { op: 'remove', path: `/blocks/${blockIdx}` },
+    ]
+  }
+  return [{ op: 'remove', path: `/blocks/${blockIdx}` }]
 }
 
 export { deleteRangePatch, commitAtomicPatch } from './rangeOps.js'

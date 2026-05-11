@@ -34,8 +34,10 @@ describe('deleteBackwardPatch', () => {
       { op: 'replace', path: '/blocks/0/text', value: 'helo' },
     ])
   })
-  it('removes atomic block when caret on it', () => {
+  it('removes atomic block when caret on it (merges flanking text)', () => {
     expect(deleteBackwardPatch([text(''), mention('@bob'), text('')], 1, 0)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: '' },
+      { op: 'remove', path: '/blocks/2' },
       { op: 'remove', path: '/blocks/1' },
     ])
   })
@@ -74,8 +76,10 @@ describe('deleteForwardPatch', () => {
       { op: 'remove', path: '/blocks/1' },
     ])
   })
-  it('removes atomic when caret on it', () => {
+  it('removes atomic when caret on it (merges flanking text)', () => {
     expect(deleteForwardPatch([text(''), mention('@bob'), text('')], 1, 0)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: '' },
+      { op: 'remove', path: '/blocks/2' },
       { op: 'remove', path: '/blocks/1' },
     ])
   })
