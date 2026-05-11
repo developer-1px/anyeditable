@@ -71,4 +71,12 @@ describe('handleCE', () => {
     expect(r.composing.current).toBe(false)
     expect(r.applied).toEqual([])
   })
+
+  it('readOnly → no-op even with non-empty data', () => {
+    const r = refs({ readOnly: true, doc: { blocks: [{ kind: 'text', text: '' }] } as ComposerDoc })
+    r.composing.current = true
+    handleCE(new CompositionEvent('compositionend', { data: '하' }), r, vi.fn())
+    expect(r.composing.current).toBe(false)
+    expect(r.applied).toEqual([])
+  })
 })
