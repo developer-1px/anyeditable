@@ -1,42 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { handleBI, handleCE, reEvalTrigger, type DomBridgeRefs } from '../bridgeHandlers.js'
-import { EMPTY_DOC, type ComposerDoc } from '../schema.js'
-
-function refs(overrides: Partial<DomBridgeRefs['state']['current']> = {}): DomBridgeRefs & { applied: unknown[] } {
-  const applied: unknown[] = []
-  const state = {
-    doc: EMPTY_DOC as ComposerDoc,
-    ops: { apply: (p: unknown) => { applied.push(p) } },
-    triggers: { '@': 'mention' as const },
-    minQueryLength: 0,
-    readOnly: false,
-    multiline: true,
-    maxLength: undefined as number | undefined,
-    dismissed: null as { blockIdx: number; startOffset: number } | null,
-    ...overrides,
-  }
-  return {
-    el: { current: null },
-    caret: { current: { blockIdx: 0, offset: 0 } },
-    pendingCaret: { current: null },
-    composing: { current: false },
-    state: { current: state },
-    applied,
-  }
-}
-
-function el(): HTMLElement {
-  const d = document.createElement('div')
-  document.body.appendChild(d)
-  return d
-}
-
-function fakeIE(inputType: string, data?: string): InputEvent {
-  const ev = new Event(inputType) as unknown as InputEvent
-  Object.defineProperty(ev, 'inputType', { value: inputType })
-  Object.defineProperty(ev, 'data', { value: data ?? null })
-  return ev
-}
+import { handleBI, handleCE } from '../bridgeHandlers.js'
+import { type ComposerDoc } from '../schema.js'
+import { refs, el, fakeIE } from './bridgeHelpers.js'
 
 describe('handleBI', () => {
   it('readOnly preventDefaults and does nothing', () => {
@@ -67,20 +32,11 @@ describe('handleBI', () => {
     expect(r.pendingCaret.current).toEqual({ blockIdx: 0, offset: 3 })
   })
 
-  it('maxLength forecast allows range-replace when net change is non-positive', () => {
+  it('maxLength forecast allows insert exactly at limit', () => {
     const r = refs({
-      doc: { blocks: [{ kind: 'text', text: 'x'.repeat(10) }] } as ComposerDoc,
+      doc: { blocks: [{ kind: 'text', text: 'x'.repeat(9) }] } as ComposerDoc,
       maxLength: 10,
     })
-    r.caret.current = { blockIdx: 0, offset: 10 }
-    // Stage a range covering 5 chars; an insert of 5 chars then nets to 10 (== limit).
-    const el2 = el()
-    el2.appendChild(document.createTextNode('x'.repeat(10)))
-    // Range can't be plumbed via real Selection in jsdom reliably; this test
-    // verifies the forecast math doesn't reject a same-size replace.
-    // We approximate by using a no-range insert and a 0-length doc to check the
-    // boundary "exactly at limit is allowed".
-    r.state.current.doc = { blocks: [{ kind: 'text', text: 'x'.repeat(9) }] } as ComposerDoc
     r.caret.current = { blockIdx: 0, offset: 9 }
     handleBI(fakeIE('insertText', 'y'), el(), r, vi.fn())
     expect(r.applied).toHaveLength(1)
@@ -114,44 +70,5 @@ describe('handleCE', () => {
     handleCE(new CompositionEvent('compositionend', { data: '' }), r, vi.fn())
     expect(r.composing.current).toBe(false)
     expect(r.applied).toEqual([])
-  })
-})
-
-describe('reEvalTrigger', () => {
-  it('caret inside @-text → fires setTrigger with hint', () => {
-    const r = refs({ doc: { blocks: [{ kind: 'text', text: '@bob' }] } as ComposerDoc })
-    r.caret.current = { blockIdx: 0, offset: 4 }
-    const setTrigger = vi.fn()
-    reEvalTrigger(r, setTrigger)
-    expect(setTrigger).toHaveBeenCalledWith(expect.objectContaining({ kind: 'mention', query: 'bob' }))
-  })
-
-  it('caret before trigger anchor → closes (null)', () => {
-    const r = refs({ doc: { blocks: [{ kind: 'text', text: '@bob' }] } as ComposerDoc })
-    r.caret.current = { blockIdx: 0, offset: 0 }
-    const setTrigger = vi.fn()
-    reEvalTrigger(r, setTrigger)
-    expect(setTrigger).toHaveBeenCalledWith(null)
-  })
-
-  it('dismissed at same anchor suppresses re-open', () => {
-    const r = refs({
-      doc: { blocks: [{ kind: 'text', text: '@bob' }] } as ComposerDoc,
-      dismissed: { blockIdx: 0, startOffset: 0 },
-    })
-    r.caret.current = { blockIdx: 0, offset: 4 }
-    const setTrigger = vi.fn()
-    reEvalTrigger(r, setTrigger)
-    expect(setTrigger).toHaveBeenCalledWith(null)
-  })
-
-  it('dismissed cleared when no hint detected', () => {
-    const r = refs({
-      doc: { blocks: [{ kind: 'text', text: 'plain' }] } as ComposerDoc,
-      dismissed: { blockIdx: 0, startOffset: 0 },
-    })
-    r.caret.current = { blockIdx: 0, offset: 5 }
-    reEvalTrigger(r, vi.fn())
-    expect(r.state.current.dismissed).toBeNull()
   })
 })
