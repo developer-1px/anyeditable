@@ -11,6 +11,18 @@ describe('deleteRangePatch', () => {
       { op: 'replace', path: '/blocks/0/text', value: 'hello' },
     ])
   })
+  it('single atomic block flanked by text → merges flanking', () => {
+    expect(deleteRangePatch([text('pre'), mention('@bob'), text('post')], 1, 0, 1, 1)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'prepost' },
+      { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
+    ])
+  })
+  it('single atomic block with no flanking text → just remove', () => {
+    expect(deleteRangePatch([mention('@bob')], 0, 0, 0, 1)).toEqual([
+      { op: 'remove', path: '/blocks/0' },
+    ])
+  })
   it('cross-block text→atomic→text: merge endpoints, drop atomic', () => {
     expect(deleteRangePatch([text('hi '), mention('@bob'), text(' check')], 0, 1, 2, 3)).toEqual([
       { op: 'replace', path: '/blocks/0/text', value: 'heck' },
