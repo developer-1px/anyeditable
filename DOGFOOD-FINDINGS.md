@@ -497,3 +497,26 @@ contenteditable 등 onChange 없는 컨트롤에서도 typing path 가 자동 �
 
 **교훈:** "외부 state 변경 (history, load) + 내부 ref-cached cursor" 가 만나는 모든 경계에서 clamp 필요.
 React state mirror 는 항상 한 tick 뒤따라가므로 핫패스의 SSOT 는 sync mirror.
+
+## F29 · No-adjacent-text invariant — uniform enforcement across delete/replace paths (iter 95)
+
+**원칙:** doc.blocks 는 절대 인접한 두 text block 을 가지지 않는다.
+(text|chip|text 만 정상, text|text 는 invariant 위반.)
+
+**기존 깨진 경로:**
+- deleteRangePatch 단일 atomic 삭제 → text|text 잔존
+- deleteRangePatch cross-block (atomic start + 인접 text → text)
+- deleteRangePatch cross-block (text start + atomic end + 인접 text)
+- rangeReplace 동일 두 패턴
+- deleteBackward/Forward atomic-on-caret remove
+
+**iter 95 조치 (`removeAtomicMergingFlanks` 헬퍼 + fold-prev/fold-next):**
+- 모든 atomic 삭제 경로가 flanking text 가 둘 다 있으면 merge → 1 text block
+- cross-block 의 fold-prev: startB=atomic + prev=text → 모든 patch 를 prev 로 흡수
+- cross-block 의 fold-next: endB=atomic + next=text → trailing text 를 merged 에 fold
+- deleteBackward/Forward 가 prev/next=text 인 transient 상황에서 한 글자만 삭제 (whole block 삭제 X)
+
+**clampCaret 보완:** atomic-block caret 을 인접 text block edge 로 normalize.
+clampRange 는 normalize 안함 (chip-only selection 유지) — invariant 보존 책임은 patch 함수에.
+
+**교훈:** invariant 를 "데이터 구조 + 모든 mutation 경로" 양쪽에서 enforce. 한 군데라도 빠지면 transient state 가 다음 op 의 입력이 되어 visible bug 가 노출됨.
