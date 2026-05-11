@@ -19,6 +19,19 @@ describe('rangeReplace', () => {
     expect(r.nextCaret).toEqual({ blockIdx: 0, offset: 2 })
   })
 
+  it('endB=atomic + next=text: folds trailing text to preserve invariant', () => {
+    const r = rangeReplace(
+      { blocks: [{ kind: 'text', text: 'pre' }, { kind: 'mention', id: 'u', label: 'x' }, { kind: 'text', text: 'tail' }] },
+      { startBlock: 0, startOffset: 1, endBlock: 1, endOffset: 1 },
+      'Z',
+    )
+    expect(r.patches).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'pZtail' },
+      { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
+    ])
+  })
+
   it('cross-block: collapses to single merged text block', () => {
     const r = rangeReplace(
       { blocks: [text('hello'), text('atomic-placeholder'), text('world')] },

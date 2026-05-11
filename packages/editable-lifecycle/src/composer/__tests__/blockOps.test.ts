@@ -109,6 +109,13 @@ describe('deleteRangePatch', () => {
       { op: 'remove', path: '/blocks/1' },
     ])
   })
+  it('cross-block text→atomic with text after: fold trailing text into merged', () => {
+    expect(deleteRangePatch([text('pre'), mention('@bob'), text('tail')], 0, 1, 1, 1)).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'ptail' },
+      { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
+    ])
+  })
 })
 
 describe('commitAtomicPatch', () => {
