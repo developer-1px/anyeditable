@@ -60,15 +60,20 @@ export function deleteForwardPatch(blocks: readonly Block[], blockIdx: number, o
   if (offset >= b.text.length) {
     const next = blocks[blockIdx + 1]
     if (!next) return []
-    const nextNext = blocks[blockIdx + 2]
-    if (next.kind !== 'text' && nextNext?.kind === 'text') {
-      return [
-        { op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text + nextNext.text },
-        { op: 'remove', path: `/blocks/${blockIdx + 2}` },
-        { op: 'remove', path: `/blocks/${blockIdx + 1}` },
-      ]
+    if (next.kind !== 'text') {
+      const nextNext = blocks[blockIdx + 2]
+      if (nextNext?.kind === 'text') {
+        return [
+          { op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text + nextNext.text },
+          { op: 'remove', path: `/blocks/${blockIdx + 2}` },
+          { op: 'remove', path: `/blocks/${blockIdx + 1}` },
+        ]
+      }
+      return [{ op: 'remove', path: `/blocks/${blockIdx + 1}` }]
     }
-    return [{ op: 'remove', path: `/blocks/${blockIdx + 1}` }]
+    // next=text (adjacent invariant transient): delete first char of next.
+    if (next.text.length === 0) return [{ op: 'remove', path: `/blocks/${blockIdx + 1}` }]
+    return [{ op: 'replace', path: `/blocks/${blockIdx + 1}/text`, value: next.text.slice(1) }]
   }
   return [{ op: 'replace', path: `/blocks/${blockIdx}/text`, value: b.text.slice(0, offset) + b.text.slice(offset + 1) }]
 }

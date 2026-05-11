@@ -82,6 +82,11 @@ describe('deleteForwardPatch', () => {
   it('at end with no next block → noop', () => {
     expect(deleteForwardPatch([text('hi')], 0, 2)).toEqual([])
   })
+  it('at end with next=text → delete first char of next', () => {
+    expect(deleteForwardPatch([text('hi'), text('world')], 0, 2)).toEqual([
+      { op: 'replace', path: '/blocks/1/text', value: 'orld' },
+    ])
+  })
 })
 
 describe('deleteRangePatch', () => {
