@@ -25,7 +25,7 @@ export function App() {
     EMPTY_DOC, { history: 50 },
   )
   const doc = jd.value as typeof EMPTY_DOC
-  const ops: JsonOps = { apply: (patches) => { jd.ops.patch(patches) } }
+  const ops = useMemo<JsonOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
 
   const c = useEditableComposer({
     doc, ops,
