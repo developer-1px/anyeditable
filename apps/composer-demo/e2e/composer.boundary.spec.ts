@@ -97,4 +97,3 @@ import { test, expect, ROOT, type } from './_helpers.js'
     expect(text).toContain('line2')
     expect(text).toContain('\n')
   })
-
