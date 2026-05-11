@@ -116,6 +116,18 @@ describe('deleteRangePatch', () => {
       { op: 'remove', path: '/blocks/1' },
     ])
   })
+  it('chip-to-chip range: folds both flanking text blocks into prev', () => {
+    expect(deleteRangePatch(
+      [text('A'), mention('@bob'), text(' mid '), mention('@al'), text('Z')],
+      1, 0, 3, 1,
+    )).toEqual([
+      { op: 'replace', path: '/blocks/0/text', value: 'AZ' },
+      { op: 'remove', path: '/blocks/4' },
+      { op: 'remove', path: '/blocks/3' },
+      { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
+    ])
+  })
 })
 
 describe('commitAtomicPatch', () => {
