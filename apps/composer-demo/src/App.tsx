@@ -78,7 +78,7 @@ export function App() {
           ))}
         </ul>
       )}
-      <p className="hint">@-mention · /-command · Shift+Enter linebreak · Cmd+Z/Cmd+Shift+Z undo/redo · Enter submit</p>
+      <p className="hint">@-mention · /-command · Esc closes popover · Shift+Enter linebreak · Cmd+Z/Cmd+Shift+Z undo/redo · Enter submit</p>
       {submitted !== null && <pre className="submitted">{JSON.stringify(submitted, null, 2)}</pre>}
     </>
   )
