@@ -1,5 +1,20 @@
 import { test, expect, ROOT, type } from './_helpers.js'
 
+  test('Select text + Backspace clears selection', async ({ page }) => {
+    await type(page, 'hello')
+    await page.keyboard.press('ControlOrMeta+a')
+    await page.keyboard.press('Backspace')
+    await expect(page.locator(ROOT)).toHaveText('')
+  })
+
+  test('Select partial text + Backspace removes only selection', async ({ page }) => {
+    await type(page, 'hello world')
+    // Move to end, then select last 5 chars (' world')
+    await page.keyboard.press('End')
+    for (let i = 0; i < 6; i++) await page.keyboard.press('Shift+ArrowLeft')
+    await page.keyboard.press('Backspace')
+    await expect(page.locator(ROOT)).toHaveText('hello')
+  })
 
   test('Two consecutive chips render correctly', async ({ page }) => {
     await page.keyboard.type('@bo')
