@@ -22,10 +22,25 @@ export function clampCaret(doc: ComposerDoc, c: CaretPos): CaretPos {
 
 export interface RangePos { startBlock: number; startOffset: number; endBlock: number; endOffset: number }
 
+/** Range clamp — bounds-only (does NOT redirect atomic endpoints to text edges).
+ *  A range whose endpoints are on the same atomic block describes "select the
+ *  chip itself", which deleteRangePatch removes correctly without expansion. */
 export function clampRange(doc: ComposerDoc, r: RangePos): RangePos {
-  const s = clampCaret(doc, { blockIdx: r.startBlock, offset: r.startOffset })
-  const e = clampCaret(doc, { blockIdx: r.endBlock, offset: r.endOffset })
-  return { startBlock: s.blockIdx, startOffset: s.offset, endBlock: e.blockIdx, endOffset: e.offset }
+  return {
+    startBlock: r.startBlock, startOffset: r.startOffset,
+    endBlock: r.endBlock, endOffset: r.endOffset,
+    ...clampEndpoint(doc, r.startBlock, r.startOffset, 'start'),
+    ...clampEndpoint(doc, r.endBlock, r.endOffset, 'end'),
+  }
+}
+
+function clampEndpoint(doc: ComposerDoc, blockIdx: number, offset: number, side: 'start' | 'end'): Partial<RangePos> {
+  if (doc.blocks.length === 0) return side === 'start' ? { startBlock: 0, startOffset: 0 } : { endBlock: 0, endOffset: 0 }
+  const idx = Math.min(Math.max(blockIdx, 0), doc.blocks.length - 1)
+  const b = doc.blocks[idx]!
+  const max = b.kind === 'text' ? b.text.length : 1
+  const off = Math.min(Math.max(offset, 0), max)
+  return side === 'start' ? { startBlock: idx, startOffset: off } : { endBlock: idx, endOffset: off }
 }
 
 /** Size of an insert (paste / drop / text / linebreak) for maxLength forecasting. */

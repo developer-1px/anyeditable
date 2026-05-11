@@ -39,6 +39,12 @@ describe('clampRange', () => {
       startBlock: 0, startOffset: 0, endBlock: 1, endOffset: 5,
     })
   })
+  it('preserves chip-selection range — does NOT redirect atomic endpoints to text', () => {
+    const d: ComposerDoc = { blocks: [{ kind: 'text', text: 'hi' }, { kind: 'mention', id: 'u', label: 'x' }, { kind: 'text', text: 'tail' }] }
+    expect(clampRange(d, { startBlock: 1, startOffset: 0, endBlock: 1, endOffset: 1 })).toEqual({
+      startBlock: 1, startOffset: 0, endBlock: 1, endOffset: 1,
+    })
+  })
 })
 
 describe('insertSize', () => {
