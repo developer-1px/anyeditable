@@ -87,10 +87,11 @@ describe('deleteRangePatch', () => {
       { op: 'remove', path: '/blocks/1' },
     ])
   })
-  it('cross-block atomic→text: replace atomic with merged text', () => {
+  it('cross-block atomic→text: merge into prev text block (preserves invariant)', () => {
     expect(deleteRangePatch([text(''), mention('@bob'), text(' rest')], 1, 0, 2, 1)).toEqual([
-      { op: 'replace', path: '/blocks/1', value: { kind: 'text', text: 'rest' } },
+      { op: 'replace', path: '/blocks/0/text', value: 'rest' },
       { op: 'remove', path: '/blocks/2' },
+      { op: 'remove', path: '/blocks/1' },
     ])
   })
 })

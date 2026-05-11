@@ -30,11 +30,20 @@ export function deleteRangePatch(
   if (!startB || !endB) return []
   const startText = startB.kind === 'text' ? startB.text.slice(0, so) : ''
   const endText = endB.kind === 'text' ? endB.text.slice(eo) : ''
-  const merged = startText + endText
+  let merged = startText + endText
   const patches: Patch[] = []
-  if (startB.kind === 'text') patches.push({ op: 'replace', path: `/blocks/${sb}/text`, value: merged })
-  else patches.push({ op: 'replace', path: `/blocks/${sb}`, value: { kind: 'text', text: merged } })
-  for (let i = eb; i > sb; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
+  // If startB was atomic and prev is text, merge into prev (preserves
+  // no-adjacent-text invariant). Otherwise replace startB in place.
+  const prev = blocks[sb - 1]
+  if (startB.kind !== 'text' && prev?.kind === 'text') {
+    merged = prev.text + merged
+    patches.push({ op: 'replace', path: `/blocks/${sb - 1}/text`, value: merged })
+    for (let i = eb; i >= sb; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
+  } else {
+    if (startB.kind === 'text') patches.push({ op: 'replace', path: `/blocks/${sb}/text`, value: merged })
+    else patches.push({ op: 'replace', path: `/blocks/${sb}`, value: { kind: 'text', text: merged } })
+    for (let i = eb; i > sb; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
+  }
   return patches
 }
 
