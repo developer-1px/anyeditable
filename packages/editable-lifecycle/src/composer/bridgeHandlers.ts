@@ -58,7 +58,8 @@ export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: S
   refs.composing.current = false
   const text = e.data ?? ''
   if (!text) return
-  const { doc, ops } = refs.state.current
+  const { doc, ops, readOnly } = refs.state.current
+  if (readOnly) return
   refs.caret.current = clampCaret(doc, refs.caret.current)
   const c = refs.caret.current
   ops.apply(insertTextPatch(doc.blocks, c.blockIdx, c.offset, text))
