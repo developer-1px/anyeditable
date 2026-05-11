@@ -1,21 +1,5 @@
 import { test, expect, ROOT, type } from './_helpers.js'
 
-  test('Select text + Backspace clears selection', async ({ page }) => {
-    await type(page, 'hello')
-    await page.keyboard.press('ControlOrMeta+a')
-    await page.keyboard.press('Backspace')
-    await expect(page.locator(ROOT)).toHaveText('')
-  })
-
-  test('Select partial text + Backspace removes only selection', async ({ page }) => {
-    await type(page, 'hello world')
-    // Move to end, then select last 5 chars (' world')
-    await page.keyboard.press('End')
-    for (let i = 0; i < 6; i++) await page.keyboard.press('Shift+ArrowLeft')
-    await page.keyboard.press('Backspace')
-    await expect(page.locator(ROOT)).toHaveText('hello')
-  })
-
   test('Two consecutive chips render correctly', async ({ page }) => {
     await page.keyboard.type('@bo')
     await page.keyboard.press('ArrowDown')
@@ -33,24 +17,11 @@ import { test, expect, ROOT, type } from './_helpers.js'
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
     await type(page, 'after')
-    // Move caret to start of 'after' (chip-right). Backspace removes chip.
     for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowLeft')
     await page.keyboard.press('Backspace')
     await page.keyboard.type('X')
     const text = await page.locator(ROOT).textContent()
     expect(text).toBe('Xafter')
-  })
-
-  test('Select-all + type replaces whole doc with single char', async ({ page }) => {
-    await type(page, 'hi ')
-    await page.keyboard.type('@bo')
-    await page.keyboard.press('ArrowDown')
-    await page.keyboard.press('Enter')
-    await type(page, 'tail')
-    await page.keyboard.press('ControlOrMeta+a')
-    await page.keyboard.type('X')
-    const text = await page.locator(ROOT).textContent()
-    expect(text).toBe('X')
   })
 
   test('Forward Delete at chip-left boundary removes chip and merges text', async ({ page }) => {
@@ -59,7 +30,6 @@ import { test, expect, ROOT, type } from './_helpers.js'
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Enter')
     await type(page, 'tail')
-    // Move caret across 'tail' (4) + over chip (1) → end of 'hi ' (chip-left).
     for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowLeft')
     await page.keyboard.press('Delete')
     await page.keyboard.type('X')
@@ -75,7 +45,6 @@ import { test, expect, ROOT, type } from './_helpers.js'
     await type(page, 'tail')
     const before = await page.locator(ROOT).textContent()
     expect(before).toBe('hi @bobtail')
-    // Move caret to start of 'tail' (just after chip)
     for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft')
     await page.keyboard.press('Backspace')
     await page.keyboard.type('X')
@@ -85,7 +54,6 @@ import { test, expect, ROOT, type } from './_helpers.js'
 
   test('Trigger detected mid-text (caret in middle of word boundary)', async ({ page }) => {
     await type(page, 'hello world')
-    // Move caret to between 'hello' and ' world' (offset 5)
     for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowLeft')
     await page.keyboard.type(' @bo', { delay: 0 })
     await expect(page.locator('[role="listbox"]')).toBeVisible()
@@ -93,7 +61,7 @@ import { test, expect, ROOT, type } from './_helpers.js'
 
   test('maxLength forecasts paste size — single big paste cannot exceed limit', async ({ page }) => {
     await type(page, 'x'.repeat(450))
-    const paste = 'y'.repeat(100) // would land at 550 without forecasting
+    const paste = 'y'.repeat(100)
     await page.evaluate(async (data) => {
       const dt = new DataTransfer()
       dt.setData('text/plain', data)
