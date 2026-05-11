@@ -47,6 +47,15 @@ export function rangeReplace(
   const eb = doc.blocks[range.endBlock]
   const startText = sb?.kind === 'text' ? sb.text.slice(0, range.startOffset) : ''
   const endText = eb?.kind === 'text' ? eb.text.slice(range.endOffset) : ''
+  // When startB is atomic + prev is text, merge into prev (preserves the
+  // no-adjacent-text invariant — same as deleteRangePatch cross-block).
+  const prev = doc.blocks[range.startBlock - 1]
+  if (sb && sb.kind !== 'text' && prev?.kind === 'text') {
+    const merged = prev.text + startText + data + endText
+    const patches: Patch[] = [{ op: 'replace', path: `/blocks/${range.startBlock - 1}/text`, value: merged }]
+    for (let i = range.endBlock; i >= range.startBlock; i--) patches.push({ op: 'remove', path: `/blocks/${i}` })
+    return { patches, nextCaret: { blockIdx: range.startBlock - 1, offset: prev.text.length + startText.length + data.length }, preventDefault: true }
+  }
   const merged = startText + data + endText
   const patches: Patch[] = []
   if (sb?.kind === 'text') patches.push({ op: 'replace', path: `/blocks/${range.startBlock}/text`, value: merged })
