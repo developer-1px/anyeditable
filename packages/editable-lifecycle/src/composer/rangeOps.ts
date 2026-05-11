@@ -10,7 +10,19 @@ export function deleteRangePatch(
   if (sb === eb) {
     const b = blocks[sb]
     if (!b) return []
-    if (b.kind !== 'text') return [{ op: 'remove', path: `/blocks/${sb}` }]
+    if (b.kind !== 'text') {
+      // Removing an atomic between two text blocks merges flanking text.
+      const prev = blocks[sb - 1]
+      const next = blocks[sb + 1]
+      if (prev?.kind === 'text' && next?.kind === 'text') {
+        return [
+          { op: 'replace', path: `/blocks/${sb - 1}/text`, value: prev.text + next.text },
+          { op: 'remove', path: `/blocks/${sb + 1}` },
+          { op: 'remove', path: `/blocks/${sb}` },
+        ]
+      }
+      return [{ op: 'remove', path: `/blocks/${sb}` }]
+    }
     return [{ op: 'replace', path: `/blocks/${sb}/text`, value: b.text.slice(0, so) + b.text.slice(eo) }]
   }
   const startB = blocks[sb]
