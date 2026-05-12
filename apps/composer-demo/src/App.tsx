@@ -1,10 +1,9 @@
 import { useMemo, useState, type HTMLAttributes, type KeyboardEvent, type LiHTMLAttributes } from 'react'
 import { useJsonDocument } from 'zod-crud'
 import {
-  ComposerDoc, EMPTY_DOC, useEditableComposer,
-  type JsonOps,
+  ComposerDoc, EMPTY_DOC, serialize, useEditable, useEditableComposer,
+  type JsonOps, type NavDir,
 } from '@p/anyeditable'
-import { concepts, lifecycle, principles, testContract } from './conceptMap.js'
 import { useTriggerCombobox } from './useTriggerCombobox.js'
 
 const USERS = [
@@ -13,16 +12,188 @@ const USERS = [
   { id: 'u3', label: 'Charlie', name: 'charlie' },
   { id: 'u4', label: 'Dave', name: 'dave' },
 ]
+
 const COMMANDS = [
   { id: 'run', label: 'Run last task', name: 'run' },
   { id: 'help', label: 'Show help', name: 'help' },
   { id: 'undo', label: 'Undo last commit', name: 'undo' },
 ]
 
+const CELL_IDS = ['A1', 'B1', 'C1', 'A2', 'B2', 'C2'] as const
+type CellId = typeof CELL_IDS[number]
+
+const INLINE_SNIPPET = `const ed = useEditable({
+  getValue: id => values[id],
+  onCommit: (id, next) => save(id, next),
+  onNavigate: (id, dir) => nextCell(id, dir),
+})
+
+return ed.editing === id
+  ? <input {...ed.inputProps} />
+  : <button onDoubleClick={() => ed.startEdit(id)}>
+      {values[id]}
+    </button>`
+
+const COMPOSER_SNIPPET = `const c = useEditableComposer({
+  doc,
+  ops: { apply: patches => jd.ops.patch(patches) },
+  triggers: { '@': 'mention', '/': 'command' },
+  renderAtomic: block => <Chip block={block} />,
+  onSubmit: ({ doc, text }) => send(doc, text),
+})
+
+if (c.trigger) {
+  c.commitAtomic({ kind: 'mention', id, label })
+}`
+
+const steps = [
+  { title: 'Start with one editable value', body: 'Use returned props on your own input and keep the lifecycle outside your design system.' },
+  { title: 'Add keyboard flow', body: 'Commit, cancel, type-to-edit, blur, and navigation live in the hook instead of scattered handlers.' },
+  { title: 'Move to contenteditable', body: 'Composer mode takes over native editing with Input Events and a flat ComposerDoc model.' },
+  { title: 'Layer atomics and popovers', body: 'Mentions, slash commands, chips, clipboard, IME, and selection stay in the same model.' },
+]
+
+const apiRows = [
+  ['useEditable', 'Input, textarea, and select edit lifecycle'],
+  ['useEditableComposer', 'Contenteditable composer with triggers and atomic chips'],
+  ['useEphemeralCollection', 'Transient suggestion lists for aria-kernel comboboxes'],
+  ['ComposerDoc / EMPTY_DOC', 'Zod schema and initial document shape'],
+  ['serialize / serializeRange', 'Plain-text projection for submit and clipboard'],
+]
+
 export function App() {
+  return (
+    <main>
+      <Hero />
+      <section className="ladder" aria-label="Adoption path">
+        {steps.map((step, index) => (
+          <article key={step.title}>
+            <span>{index + 1}</span>
+            <h3>{step.title}</h3>
+            <p>{step.body}</p>
+          </article>
+        ))}
+      </section>
+      <InlineShowcase />
+      <ComposerShowcase />
+      <section className="feature-band" aria-labelledby="edge-title">
+        <div className="section-copy">
+          <p className="eyebrow">production edges</p>
+          <h2 id="edge-title">The cases you stop re-implementing</h2>
+          <p>
+            The package owns editing lifecycle mechanics. Your app owns rendering, styling, persistence, and product behavior.
+          </p>
+        </div>
+        <div className="edge-grid">
+          {['IME composition', 'Range replace', 'Atomic delete', 'Plain-text paste', 'Undo / redo', 'Max length forecast'].map(item => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </section>
+      <HowItWorks />
+      <ApiSurface />
+    </main>
+  )
+}
+
+function Hero() {
+  return (
+    <header className="hero">
+      <div className="hero-copy">
+        <p className="eyebrow">react editable lifecycle</p>
+        <h1>Headless editable hooks for the surfaces your app already owns.</h1>
+        <p className="lede">
+          `@p/anyeditable` gives React apps IME-safe inline editing and a contenteditable chat composer without shipping markup, CSS, or a rich-text editor runtime.
+        </p>
+        <div className="install-row" aria-label="Install command">
+          <code>npm i @p/anyeditable</code>
+          <a href="#inline-edit">Start simple</a>
+          <a href="#composer">Try composer</a>
+        </div>
+      </div>
+      <div className="hero-panel" aria-label="Package summary">
+        <div>
+          <strong>2 hooks</strong>
+          <span>one lifecycle identity</span>
+        </div>
+        <div>
+          <strong>186</strong>
+          <span>unit and integration tests</span>
+        </div>
+        <div>
+          <strong>70</strong>
+          <span>browser e2e scenarios</span>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function InlineShowcase() {
+  const [values, setValues] = useState<Record<CellId, string>>({
+    A1: 'Roadmap',
+    B1: 'In review',
+    C1: 'Q2',
+    A2: 'Composer',
+    B2: 'Ready',
+    C2: 'v0.4',
+  })
+
+  const ed = useEditable<CellId>({
+    getValue: (id) => values[id],
+    onCommit: (id, next) => setValues(prev => ({ ...prev, [id]: next })),
+    onNavigate: (id, dir) => nextCell(id, dir),
+    initialFocus: 'A1',
+  })
+
+  return (
+    <section id="inline-edit" className="showcase two-col">
+      <div className="section-copy">
+        <p className="eyebrow">01 / useEditable</p>
+        <h2>Start with a cell, field, or select.</h2>
+        <p>
+          Double-click a value, type directly while a cell is focused, press Enter or Tab to commit, and Escape to cancel.
+        </p>
+        <ul className="check-list">
+          <li>Type-to-edit before an input exists</li>
+          <li>IME-safe Enter and Escape handling</li>
+          <li>Blur commit and directional navigation</li>
+          <li>Adapters for input, textarea, and select</li>
+        </ul>
+      </div>
+      <div className="playground-grid">
+        <div
+          className="cell-grid"
+          onKeyDown={(e) => {
+            if (ed.focusId) ed.handleTypeToEdit(e, ed.focusId)
+          }}
+        >
+          {CELL_IDS.map(id => {
+            const focused = ed.focusId === id
+            return ed.editing === id ? (
+              <input key={id} aria-label={id} className="cell-input" {...ed.inputProps} />
+            ) : (
+              <button
+                key={id}
+                className={focused ? 'cell active' : 'cell'}
+                type="button"
+                onClick={() => ed.setFocusId(id)}
+                onDoubleClick={() => ed.startEdit(id, undefined, { caret: 'select-all' })}
+              >
+                <span>{id}</span>
+                <strong>{values[id]}</strong>
+              </button>
+            )
+          })}
+        </div>
+        <CodeBlock code={INLINE_SNIPPET} />
+      </div>
+    </section>
+  )
+}
+
+function ComposerShowcase() {
   const [submitted, setSubmitted] = useState<unknown>(null)
-  const [selectedId, setSelectedId] = useState(concepts[3]!.id)
-  const selected = concepts.find(cn => cn.id === selectedId) ?? concepts[0]!
   const jd = useJsonDocument(
     ComposerDoc as unknown as Parameters<typeof useJsonDocument>[0],
     EMPTY_DOC, { history: 50 },
@@ -33,14 +204,13 @@ export function App() {
   const c = useEditableComposer({
     doc, ops,
     triggers: { '@': 'mention', '/': 'command' },
-    placeholder: 'Type a message — try @ or /',
-    autoFocus: true,
+    placeholder: 'Ask @bob to /run the last task',
     spellCheck: true,
     maxLength: 500,
     renderAtomic: (b) => b.kind === 'mention'
       ? <span className="chip">@{b.label}</span>
       : b.kind === 'command'
-      ? <span className="chip">/{b.name}</span>
+      ? <span className="chip command">/{b.name}</span>
       : null,
     onSubmit: ({ doc: d, text }) => { setSubmitted({ doc: d, text }); jd.ops.load(EMPTY_DOC) },
     onUndo: () => { jd.commands.undo() },
@@ -76,158 +246,113 @@ export function App() {
   }
 
   return (
-    <main className="page-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">source-code map browser</p>
-          <h1>@p/anyeditable</h1>
-          <p className="lede">
-            Headless editable kernels for React, explained from the source files that implement them.
-          </p>
+    <section id="composer" className="showcase composer-showcase">
+      <div className="section-copy">
+        <p className="eyebrow">02 / useEditableComposer</p>
+        <h2>Then move to a real contenteditable composer.</h2>
+        <p>
+          Type `@b` or `/r`, use arrows and Enter to commit a chip, then press Enter again to inspect the submitted payload.
+        </p>
+      </div>
+      <div className="composer-layout">
+        <div className="composer-playground">
+          <div
+            className="composer"
+            ref={c.containerRef}
+            {...c.containerProps}
+            onKeyDown={onComposerKeyDown}
+          />
+          {c.portals}
+          {c.trigger && items.length > 0 && (
+            <ul className="popover" {...(cb.listboxProps as HTMLAttributes<HTMLUListElement>)} hidden={false}>
+              {items.map(it => (
+                <li key={it.id} {...(cb.optionProps(it.id) as LiHTMLAttributes<HTMLLIElement>)}>{String(it.label ?? it.id)}</li>
+              ))}
+            </ul>
+          )}
+          <p className="hint">@ mention · / command · Esc cancel · Shift+Enter linebreak · Cmd/Ctrl+Z undo</p>
         </div>
-        <dl className="hero-stats" aria-label="Repository summary">
-          {testContract.map(item => (
-            <div key={item.label}>
-              <dt>{item.label}</dt>
-              <dd>{item.value}</dd>
-              <small>{item.detail}</small>
-            </div>
-          ))}
-        </dl>
-      </header>
-
-      <section className="principles" aria-label="Core principles">
-        {principles.map(item => <span key={item}>{item}</span>)}
-      </section>
-
-      <section className="browser-grid" aria-labelledby="concept-map-title">
-        <aside className="concept-tree">
-          <div className="section-heading">
-            <p className="eyebrow">concept map</p>
-            <h2 id="concept-map-title">Code as IA</h2>
-          </div>
-          <div className="tree-list">
-            {concepts.map((node, index) => (
-              <button
-                key={node.id}
-                className={node.id === selected.id ? 'tree-node active' : 'tree-node'}
-                type="button"
-                onClick={() => setSelectedId(node.id)}
-              >
-                <span className="node-index">{String(index + 1).padStart(2, '0')}</span>
-                <span>
-                  <strong>{node.title}</strong>
-                  <small>{node.kind}</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <article className="concept-detail">
-          <div className="detail-header">
-            <div>
-              <p className="eyebrow">{selected.kind}</p>
-              <h2>{selected.title}</h2>
-            </div>
-            <span className="file-count">{selected.files.length} files</span>
-          </div>
-          <p className="summary">{selected.summary}</p>
-          <p className="responsibility">{selected.responsibility}</p>
-
-          <div className="io-grid">
-            <InfoList title="Inputs" items={selected.inputs} />
-            <InfoList title="Outputs" items={selected.outputs} />
-            {selected.exports ? <InfoList title="Exports" items={selected.exports} /> : null}
-          </div>
-
-          <div className="source-columns">
-            <FileList title="Source files" files={selected.files} />
-            <FileList title="Tests" files={selected.tests} />
-          </div>
-        </article>
-      </section>
-
-      <section className="lifecycle-section" aria-labelledby="lifecycle-title">
-        <div className="section-heading">
-          <p className="eyebrow">composer lifecycle</p>
-          <h2 id="lifecycle-title">Native event to reconciled DOM</h2>
+        <div className="inspector">
+          <section>
+            <h3>ComposerDoc</h3>
+            <pre>{JSON.stringify(doc, null, 2)}</pre>
+          </section>
+          <section>
+            <h3>Plain text</h3>
+            <pre>{serialize(doc) || '(empty)'}</pre>
+          </section>
+          <section>
+            <h3>Trigger</h3>
+            <pre>{c.trigger ? JSON.stringify(c.trigger, null, 2) : '(none)'}</pre>
+          </section>
+          <section>
+            <h3>Submitted</h3>
+            <pre className="submitted">{submitted !== null ? JSON.stringify(submitted, null, 2) : '(press Enter)'}</pre>
+          </section>
         </div>
-        <ol className="lifecycle-rail">
-          {lifecycle.map((step, index) => (
-            <li key={step.label}>
-              <span className="step-number">{index + 1}</span>
-              <strong>{step.label}</strong>
-              <p>{step.detail}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="atlas-section" aria-labelledby="atlas-title">
-        <div className="section-heading">
-          <p className="eyebrow">module atlas</p>
-          <h2 id="atlas-title">Responsibilities by implementation area</h2>
-        </div>
-        <div className="atlas-grid">
-          {concepts.slice(1, 9).map(node => (
-            <button
-              key={node.id}
-              className="atlas-item"
-              type="button"
-              onClick={() => setSelectedId(node.id)}
-            >
-              <span>{node.kind}</span>
-              <strong>{node.title}</strong>
-              <small>{node.files[0]}</small>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="demo-section" aria-labelledby="demo-title">
-        <div className="section-heading">
-          <p className="eyebrow">live demo</p>
-          <h2 id="demo-title">Public API dogfood surface</h2>
-        </div>
-        <div className="demo-layout">
-          <div className="demo-pane">
-            <div
-              className="composer"
-              ref={c.containerRef}
-              {...c.containerProps}
-              onKeyDown={onComposerKeyDown}
-            />
-            {c.portals}
-            {c.trigger && items.length > 0 && (
-              <ul className="popover" {...(cb.listboxProps as HTMLAttributes<HTMLUListElement>)} hidden={false}>
-                {items.map(it => (
-                  <li key={it.id} {...(cb.optionProps(it.id) as LiHTMLAttributes<HTMLLIElement>)}>{String(it.label ?? it.id)}</li>
-                ))}
-              </ul>
-            )}
-            <p className="hint">@-mention · /-command · Esc closes popover · Shift+Enter linebreak · Cmd+Z/Cmd+Shift+Z undo/redo · Enter submit</p>
-          </div>
-          <div className="state-pane">
-            <h3>Submitted payload</h3>
-            <pre className="submitted">{submitted !== null ? JSON.stringify(submitted, null, 2) : 'Press Enter with text to inspect the ComposerDoc payload.'}</pre>
-          </div>
-        </div>
-      </section>
-
-      <section className="roadmap-section" aria-labelledby="roadmap-title">
-        <div className="section-heading">
-          <p className="eyebrow">roadmap and findings</p>
-          <h2 id="roadmap-title">What remains intentionally external</h2>
-        </div>
-        <div className="finding-grid">
-          <p>Dogfood findings track cross-package seams with zod-crud and aria-kernel.</p>
-          <p>The next SSOT step is an extractor that generates this concept map from imports, exports, JSDoc, and test names.</p>
-          <p>Out of scope remains rich document trees, inline formatting marks, collaborative editing, and HTML paste sanitizing.</p>
-        </div>
-      </section>
-    </main>
+        <CodeBlock code={COMPOSER_SNIPPET} />
+      </div>
+    </section>
   )
+}
+
+function HowItWorks() {
+  return (
+    <section className="how-it-works" aria-labelledby="how-title">
+      <div className="section-copy">
+        <p className="eyebrow">under the hood</p>
+        <h2 id="how-title">Small public API, standards-shaped internals.</h2>
+      </div>
+      <ol className="flow">
+        {[
+          ['Input Events', 'beforeinput and compositionend describe the native edit.'],
+          ['Selection API', 'DOM positions resolve to block indexes and offsets.'],
+          ['RFC 6902', 'Edits become patch batches consumed by zod-crud.'],
+          ['DOM Reconcile', 'Text nodes stay stable; atomics render through portals.'],
+        ].map(([title, body]) => (
+          <li key={title}>
+            <strong>{title}</strong>
+            <p>{body}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+function ApiSurface() {
+  return (
+    <section className="api-section" aria-labelledby="api-title">
+      <div className="section-copy">
+        <p className="eyebrow">api surface</p>
+        <h2 id="api-title">Import only the lifecycle you need.</h2>
+      </div>
+      <div className="api-table">
+        {apiRows.map(([name, desc]) => (
+          <div key={name}>
+            <code>{name}</code>
+            <span>{desc}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CodeBlock({ code }: { code: string }) {
+  return <pre className="code-block"><code>{code}</code></pre>
+}
+
+function nextCell(id: CellId, dir: NavDir): CellId | null {
+  const idx = CELL_IDS.indexOf(id)
+  const col = idx % 3
+  const row = Math.floor(idx / 3)
+  const next =
+    dir === 'right' ? idx + 1
+    : dir === 'left' ? idx - 1
+    : dir === 'down' ? (row + 1) * 3 + col
+    : (row - 1) * 3 + col
+  return CELL_IDS[next] ?? null
 }
 
 function moveCaretToEdge(root: HTMLElement, edge: 'start' | 'end') {
@@ -251,26 +376,4 @@ function moveCaretToEdge(root: HTMLElement, edge: 'start' | 'end') {
   range.collapse(true)
   sel.removeAllRanges()
   sel.addRange(range)
-}
-
-function InfoList({ title, items }: { title: string; items: readonly string[] }) {
-  return (
-    <section className="info-list">
-      <h3>{title}</h3>
-      <ul>
-        {items.map(item => <li key={item}>{item}</li>)}
-      </ul>
-    </section>
-  )
-}
-
-function FileList({ title, files }: { title: string; files: readonly string[] }) {
-  return (
-    <section className="file-list">
-      <h3>{title}</h3>
-      <ul>
-        {files.map(file => <li key={file}><code>{file}</code></li>)}
-      </ul>
-    </section>
-  )
 }
