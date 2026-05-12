@@ -1,4 +1,4 @@
-import { useMemo, useState, type HTMLAttributes, type KeyboardEvent, type LiHTMLAttributes } from 'react'
+import { useMemo, useState, type HTMLAttributes, type KeyboardEvent, type LiHTMLAttributes, type ReactNode } from 'react'
 import { useJsonDocument } from 'zod-crud'
 import {
   ComposerDoc, EMPTY_DOC, serialize, useEditable, useEditableComposer,
@@ -46,90 +46,110 @@ if (c.trigger) {
   c.commitAtomic({ kind: 'mention', id, label })
 }`
 
-const steps = [
-  { title: 'Start with one editable value', body: 'Use returned props on your own input and keep the lifecycle outside your design system.' },
-  { title: 'Add keyboard flow', body: 'Commit, cancel, type-to-edit, blur, and navigation live in the hook instead of scattered handlers.' },
-  { title: 'Move to contenteditable', body: 'Composer mode takes over native editing with Input Events and a flat ComposerDoc model.' },
-  { title: 'Layer atomics and popovers', body: 'Mentions, slash commands, chips, clipboard, IME, and selection stay in the same model.' },
-]
-
-const apiRows = [
-  ['useEditable', 'Input, textarea, and select edit lifecycle'],
-  ['useEditableComposer', 'Contenteditable composer with triggers and atomic chips'],
-  ['useEphemeralCollection', 'Transient suggestion lists for aria-kernel comboboxes'],
-  ['ComposerDoc / EMPTY_DOC', 'Zod schema and initial document shape'],
-  ['serialize / serializeRange', 'Plain-text projection for submit and clipboard'],
+const API_GROUPS = [
+  {
+    title: '주요 hook',
+    rows: [
+      ['useEditable', 'input, textarea, select 기반 inline edit lifecycle'],
+      ['useEditableComposer', 'contenteditable 기반 composer lifecycle'],
+    ],
+  },
+  {
+    title: 'composer toolkit',
+    rows: [
+      ['ComposerDoc / EMPTY_DOC', 'composer document schema와 초기값'],
+      ['useEphemeralCollection', 'trigger suggestion list를 combobox data로 어댑트'],
+      ['serialize / serializeRange', 'submit, clipboard용 plain text projection'],
+      ['resolveCaret / resolveRange', 'DOM Selection을 document position으로 변환'],
+    ],
+  },
 ]
 
 export function App() {
   return (
-    <main>
-      <Hero />
-      <section className="ladder" aria-label="Adoption path">
-        {steps.map((step, index) => (
-          <article key={step.title}>
-            <span>{index + 1}</span>
-            <h3>{step.title}</h3>
-            <p>{step.body}</p>
-          </article>
-        ))}
-      </section>
-      <InlineShowcase />
-      <ComposerShowcase />
-      <section className="feature-band" aria-labelledby="edge-title">
-        <div className="section-copy">
-          <p className="eyebrow">production edges</p>
-          <h2 id="edge-title">The cases you stop re-implementing</h2>
-          <p>
-            The package owns editing lifecycle mechanics. Your app owns rendering, styling, persistence, and product behavior.
-          </p>
-        </div>
-        <div className="edge-grid">
-          {['IME composition', 'Range replace', 'Atomic delete', 'Plain-text paste', 'Undo / redo', 'Max length forecast'].map(item => (
-            <span key={item}>{item}</span>
+    <main className="doc">
+      <header className="doc-header">
+        <p className="kicker">기술 노트 / playground</p>
+        <h1>@p/anyeditable</h1>
+        <p>
+          React에서 직접 만든 편집 UI에 붙이는 headless editing lifecycle hook입니다.
+          아직 범용 editor framework가 아니라, 현재는 두 가지 편집 surface를 안정적으로 다루는 패키지입니다.
+        </p>
+        <pre className="install"><code>npm i @p/anyeditable</code></pre>
+      </header>
+
+      <NotebookSection id="scope" title="0. 현재 제공하는 것">
+        <p>
+          이 패키지의 중심은 컴포넌트가 아니라 lifecycle입니다. UI, markup, CSS, design token은 앱이 소유하고,
+          패키지는 편집 시작, draft, commit, cancel, selection, paste, IME 같은 브라우저 편집 흐름을 맡습니다.
+        </p>
+        <div className="api-groups">
+          {API_GROUPS.map(group => (
+            <section key={group.title}>
+              <h3>{group.title}</h3>
+              <dl>
+                {group.rows.map(([name, desc]) => (
+                  <div key={name}>
+                    <dt><code>{name}</code></dt>
+                    <dd>{desc}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
           ))}
         </div>
-      </section>
-      <HowItWorks />
-      <ApiSurface />
+      </NotebookSection>
+
+      <NotebookSection id="inline-edit" title="1. 기본형: inline edit">
+        <p>
+          가장 작은 사용 형태입니다. 셀을 더블클릭하거나, 셀을 선택한 뒤 바로 타이핑하면 edit mode로 들어갑니다.
+          Enter/Tab은 commit과 이동, Escape는 cancel, blur는 commit입니다.
+        </p>
+        <InlinePlayground />
+      </NotebookSection>
+
+      <NotebookSection id="composer" title="2. 확장형: contenteditable composer">
+        <p>
+          contenteditable로 넘어가면 IME, selection, paste, atomic chip 같은 문제가 생깁니다.
+          `useEditableComposer`는 이 영역을 flat `ComposerDoc`과 patch 흐름으로 다룹니다.
+        </p>
+        <ComposerPlayground />
+      </NotebookSection>
+
+      <NotebookSection id="internals" title="3. 내부 흐름">
+        <p>현재 composer의 핵심 흐름은 아래 정도로만 이해하면 됩니다. 파일 구조 설명은 이 흐름 뒤에 붙는 보조 정보입니다.</p>
+        <ol className="flow">
+          <li><strong>Input Events</strong><span>beforeinput, compositionend가 native edit intent를 만든다.</span></li>
+          <li><strong>Selection API</strong><span>DOM caret/range를 document position으로 바꾼다.</span></li>
+          <li><strong>RFC 6902 patches</strong><span>insert/delete/range/atomic 조작을 patch로 표현한다.</span></li>
+          <li><strong>DOM reconcile</strong><span>model을 contenteditable DOM에 되돌리고 caret을 복원한다.</span></li>
+        </ol>
+      </NotebookSection>
+
+      <NotebookSection id="tests" title="4. 테스트 계약">
+        <p>
+          현재 demo는 문서이면서 browser smoke surface입니다. composer 계약은 기존 e2e가 계속 검증합니다.
+        </p>
+        <ul>
+          <li>unit/integration: 186 tests</li>
+          <li>browser e2e: 70 scenarios</li>
+          <li>커버 범위: IME, paste, selection, atomic chip, undo/redo, submit</li>
+        </ul>
+      </NotebookSection>
     </main>
   )
 }
 
-function Hero() {
+function NotebookSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <header className="hero">
-      <div className="hero-copy">
-        <p className="eyebrow">react editable lifecycle</p>
-        <h1>Headless editable hooks for the surfaces your app already owns.</h1>
-        <p className="lede">
-          `@p/anyeditable` gives React apps IME-safe inline editing and a contenteditable chat composer without shipping markup, CSS, or a rich-text editor runtime.
-        </p>
-        <div className="install-row" aria-label="Install command">
-          <code>npm i @p/anyeditable</code>
-          <a href="#inline-edit">Start simple</a>
-          <a href="#composer">Try composer</a>
-        </div>
-      </div>
-      <div className="hero-panel" aria-label="Package summary">
-        <div>
-          <strong>2 hooks</strong>
-          <span>one lifecycle identity</span>
-        </div>
-        <div>
-          <strong>186</strong>
-          <span>unit and integration tests</span>
-        </div>
-        <div>
-          <strong>70</strong>
-          <span>browser e2e scenarios</span>
-        </div>
-      </div>
-    </header>
+    <section id={id} className="notebook-section">
+      <h2>{title}</h2>
+      {children}
+    </section>
   )
 }
 
-function InlineShowcase() {
+function InlinePlayground() {
   const [values, setValues] = useState<Record<CellId, string>>({
     A1: 'Roadmap',
     B1: 'In review',
@@ -147,21 +167,9 @@ function InlineShowcase() {
   })
 
   return (
-    <section id="inline-edit" className="showcase two-col">
-      <div className="section-copy">
-        <p className="eyebrow">01 / useEditable</p>
-        <h2>Start with a cell, field, or select.</h2>
-        <p>
-          Double-click a value, type directly while a cell is focused, press Enter or Tab to commit, and Escape to cancel.
-        </p>
-        <ul className="check-list">
-          <li>Type-to-edit before an input exists</li>
-          <li>IME-safe Enter and Escape handling</li>
-          <li>Blur commit and directional navigation</li>
-          <li>Adapters for input, textarea, and select</li>
-        </ul>
-      </div>
-      <div className="playground-grid">
+    <div className="example">
+      <div className="playground">
+        <h3>Playground</h3>
         <div
           className="cell-grid"
           onKeyDown={(e) => {
@@ -186,13 +194,17 @@ function InlineShowcase() {
             )
           })}
         </div>
-        <CodeBlock code={INLINE_SNIPPET} />
       </div>
-    </section>
+      <div className="observe">
+        <h3>Observe</h3>
+        <pre>{JSON.stringify({ focusId: ed.focusId, editing: ed.editing, draft: ed.draft, values }, null, 2)}</pre>
+      </div>
+      <CodeBlock code={INLINE_SNIPPET} />
+    </div>
   )
 }
 
-function ComposerShowcase() {
+function ComposerPlayground() {
   const [submitted, setSubmitted] = useState<unknown>(null)
   const jd = useJsonDocument(
     ComposerDoc as unknown as Parameters<typeof useJsonDocument>[0],
@@ -246,101 +258,42 @@ function ComposerShowcase() {
   }
 
   return (
-    <section id="composer" className="showcase composer-showcase">
-      <div className="section-copy">
-        <p className="eyebrow">02 / useEditableComposer</p>
-        <h2>Then move to a real contenteditable composer.</h2>
-        <p>
-          Type `@b` or `/r`, use arrows and Enter to commit a chip, then press Enter again to inspect the submitted payload.
-        </p>
+    <div className="example">
+      <div className="playground">
+        <h3>Playground</h3>
+        <div
+          className="composer"
+          ref={c.containerRef}
+          {...c.containerProps}
+          onKeyDown={onComposerKeyDown}
+        />
+        {c.portals}
+        {c.trigger && items.length > 0 && (
+          <ul className="popover" {...(cb.listboxProps as HTMLAttributes<HTMLUListElement>)} hidden={false}>
+            {items.map(it => (
+              <li key={it.id} {...(cb.optionProps(it.id) as LiHTMLAttributes<HTMLLIElement>)}>{String(it.label ?? it.id)}</li>
+            ))}
+          </ul>
+        )}
+        <p className="hint">@b, /r, Escape, Shift+Enter, Cmd/Ctrl+Z를 시도해보세요.</p>
       </div>
-      <div className="composer-layout">
-        <div className="composer-playground">
-          <div
-            className="composer"
-            ref={c.containerRef}
-            {...c.containerProps}
-            onKeyDown={onComposerKeyDown}
-          />
-          {c.portals}
-          {c.trigger && items.length > 0 && (
-            <ul className="popover" {...(cb.listboxProps as HTMLAttributes<HTMLUListElement>)} hidden={false}>
-              {items.map(it => (
-                <li key={it.id} {...(cb.optionProps(it.id) as LiHTMLAttributes<HTMLLIElement>)}>{String(it.label ?? it.id)}</li>
-              ))}
-            </ul>
-          )}
-          <p className="hint">@ mention · / command · Esc cancel · Shift+Enter linebreak · Cmd/Ctrl+Z undo</p>
-        </div>
-        <div className="inspector">
-          <section>
-            <h3>ComposerDoc</h3>
-            <pre>{JSON.stringify(doc, null, 2)}</pre>
-          </section>
-          <section>
-            <h3>Plain text</h3>
-            <pre>{serialize(doc) || '(empty)'}</pre>
-          </section>
-          <section>
-            <h3>Trigger</h3>
-            <pre>{c.trigger ? JSON.stringify(c.trigger, null, 2) : '(none)'}</pre>
-          </section>
-          <section>
-            <h3>Submitted</h3>
-            <pre className="submitted">{submitted !== null ? JSON.stringify(submitted, null, 2) : '(press Enter)'}</pre>
-          </section>
-        </div>
-        <CodeBlock code={COMPOSER_SNIPPET} />
+      <div className="observe">
+        <h3>Observe</h3>
+        <pre>{JSON.stringify({ doc, text: serialize(doc), trigger: c.trigger, submitted }, null, 2)}</pre>
+        <pre className="submitted">{submitted !== null ? JSON.stringify(submitted, null, 2) : '(press Enter)'}</pre>
       </div>
-    </section>
-  )
-}
-
-function HowItWorks() {
-  return (
-    <section className="how-it-works" aria-labelledby="how-title">
-      <div className="section-copy">
-        <p className="eyebrow">under the hood</p>
-        <h2 id="how-title">Small public API, standards-shaped internals.</h2>
-      </div>
-      <ol className="flow">
-        {[
-          ['Input Events', 'beforeinput and compositionend describe the native edit.'],
-          ['Selection API', 'DOM positions resolve to block indexes and offsets.'],
-          ['RFC 6902', 'Edits become patch batches consumed by zod-crud.'],
-          ['DOM Reconcile', 'Text nodes stay stable; atomics render through portals.'],
-        ].map(([title, body]) => (
-          <li key={title}>
-            <strong>{title}</strong>
-            <p>{body}</p>
-          </li>
-        ))}
-      </ol>
-    </section>
-  )
-}
-
-function ApiSurface() {
-  return (
-    <section className="api-section" aria-labelledby="api-title">
-      <div className="section-copy">
-        <p className="eyebrow">api surface</p>
-        <h2 id="api-title">Import only the lifecycle you need.</h2>
-      </div>
-      <div className="api-table">
-        {apiRows.map(([name, desc]) => (
-          <div key={name}>
-            <code>{name}</code>
-            <span>{desc}</span>
-          </div>
-        ))}
-      </div>
-    </section>
+      <CodeBlock code={COMPOSER_SNIPPET} />
+    </div>
   )
 }
 
 function CodeBlock({ code }: { code: string }) {
-  return <pre className="code-block"><code>{code}</code></pre>
+  return (
+    <div className="code-cell">
+      <h3>Code</h3>
+      <pre><code>{code}</code></pre>
+    </div>
+  )
 }
 
 function nextCell(id: CellId, dir: NavDir): CellId | null {
