@@ -1,5 +1,5 @@
 import type { AtomicKind, ComposerDoc } from './schema.js'
-import type { JsonOps } from './useEditableComposer.js'
+import type { JsonOps } from './useEditableSurface.js'
 import type { TriggerHint } from './triggers.js'
 import type { CaretPos } from './useDocReconciler.js'
 import { detectTrigger } from './triggers.js'

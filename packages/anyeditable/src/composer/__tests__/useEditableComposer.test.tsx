@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useEditableComposer, type UseEditableComposerOptions } from '../useEditableComposer.js'
+import { useEditableSurface } from '../useEditableSurface.js'
 import { EMPTY_DOC, type ComposerDoc, type Block } from '../schema.js'
 
 function setup(over: Partial<UseEditableComposerOptions> = {}) {
@@ -19,6 +20,10 @@ function setup(over: Partial<UseEditableComposerOptions> = {}) {
 }
 
 describe('useEditableComposer', () => {
+  it('is a backwards-compatible alias for useEditableSurface', () => {
+    expect(useEditableComposer).toBe(useEditableSurface)
+  })
+
   it('returns containerProps with textbox role + content-editable when not readOnly', () => {
     const { result } = setup()
     expect(result.current.containerProps.role).toBe('textbox')

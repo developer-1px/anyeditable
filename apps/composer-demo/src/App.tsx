@@ -7,7 +7,7 @@ const API_GROUPS = [
   {
     title: '주요 hook',
     rows: [
-      ['useEditableComposer', 'contenteditable 기반 visual surface와 composer lifecycle'],
+      ['useEditableSurface', 'contenteditable 기반 visual surface와 composer lifecycle'],
       ['useEditable', 'input, textarea, select 기반 inline edit lifecycle'],
     ],
   },
@@ -75,7 +75,7 @@ export function App() {
 
       <NotebookSection id="composer" title="3. 확장형: contenteditable composer">
         <p>
-          채팅 composer처럼 trigger, atomic chip, submit이 필요해지면 같은 <code>useEditableComposer</code>를 더 넓게 씁니다.
+          채팅 composer처럼 trigger, atomic chip, submit이 필요해지면 같은 <code>useEditableSurface</code>를 더 넓게 씁니다.
           이 영역은 flat <code>ComposerDoc</code>과 patch 흐름으로 다룹니다.
         </p>
         <ComposerExample />

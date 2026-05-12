@@ -2,7 +2,7 @@ import { useMemo, type MutableRefObject } from 'react'
 import { applyPatch as zodApply } from 'zod-crud'
 import { ComposerDoc as ComposerDocSchema, type ComposerDoc } from './schema.js'
 import type { Patch } from './blockOps.js'
-import type { JsonOps } from './useEditableComposer.js'
+import type { JsonOps } from './useEditableSurface.js'
 
 export interface DocSnapshotRef {
   current: { doc: ComposerDoc; [k: string]: unknown }

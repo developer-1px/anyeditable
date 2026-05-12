@@ -6,9 +6,9 @@ Headless inline-edit kernels for React.
 | Hook | Use case | Vocabulary closure |
 |---|---|---|
 | `useEditable` (v0.2) | inline-edit cell · 1-line input/textarea/select with IME-safe lifecycle | WHATWG `composition` events, `KeyboardEvent.isComposing` |
-| `useEditableComposer` (v0.3) | chat composer — contenteditable + `@`-mention + `/`-command + atomic chips | WHATWG Input Events L2, W3C Selection API, RFC 6902, WAI-ARIA APG Combobox |
+| `useEditableSurface` (v0.3) | contenteditable visual surface or composer — optional `@`-mention, `/`-command, atomic chips | WHATWG Input Events L2, W3C Selection API, RFC 6902, WAI-ARIA APG Combobox |
 
-The v0.3 composer is part of a **3-package family** dogfooded together:
+The v0.3 surface is part of a **3-package family** dogfooded together:
 
 ```
 @p/anyeditable ─▶ @p/aria-kernel  (useComboboxPattern, axes, fromList)
@@ -21,7 +21,7 @@ The v0.3 composer is part of a **3-package family** dogfooded together:
 
 ```bash
 npm i @p/anyeditable
-# v0.3 composer additionally requires:
+# v0.3 surface additionally requires:
 npm i @p/aria-kernel zod-crud zod
 ```
 
@@ -51,10 +51,12 @@ function CellGrid({ values, save }) {
 
 What you get: IME-safe Enter/Escape · Type-to-edit · Navigate-after-commit · Auto-focus + caret modes · Blur-commit · Escape-cancel · `<select>` adapter · Read-only gate.
 
-## v0.3 — `useEditableComposer` (chat composer)
+## v0.3 — `useEditableSurface` (contenteditable surface)
+
+`useEditableComposer` is still exported as a backwards-compatible alias, but new usage should prefer `useEditableSurface`.
 
 ```tsx
-import { useEditableComposer, useEphemeralCollection } from '@p/anyeditable'
+import { useEditableSurface, useEphemeralCollection } from '@p/anyeditable'
 import { useJsonDocument } from 'zod-crud'
 import { fromList } from '@p/aria-kernel'
 import { useComboboxPattern } from '@p/aria-kernel/patterns'
@@ -64,7 +66,7 @@ function ChatComposer({ users, onSend }) {
   const jd = useJsonDocument(ComposerDoc, EMPTY_DOC, { history: 50 })
   const ops = { apply: (patches) => jd.ops.patch(patches) }
 
-  const c = useEditableComposer({
+  const c = useEditableSurface({
     doc: jd.value, ops,
     triggers: { '@': 'mention', '/': 'command' },
     renderAtomic: (b) => b.kind === 'mention'

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useJsonDocument } from 'zod-crud'
 import {
-  ComposerDoc, EMPTY_DOC, serialize, useEditableComposer,
+  ComposerDoc, EMPTY_DOC, serialize, useEditableSurface,
   type ComposerDoc as ComposerDocType, type JsonOps,
 } from '@p/anyeditable'
 import { CodeBlock } from '../docs/CodeBlock.js'
@@ -50,7 +50,7 @@ function useVisualComposer(initialText: string, opts: { label: string; multiline
   )
   const doc = jd.value as ComposerDocType
   const ops = useMemo<JsonOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
-  const c = useEditableComposer({
+  const c = useEditableSurface({
     doc,
     ops,
     triggers: {},

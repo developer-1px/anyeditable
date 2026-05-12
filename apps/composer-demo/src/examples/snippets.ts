@@ -15,7 +15,7 @@ export const VISUAL_CONTENTEDITABLE_SNIPPET = `const titleDoc = useJsonDocument(
   { blocks: [{ kind: 'text', text: '캠페인 런칭' }] },
 )
 
-const title = useEditableComposer({
+const title = useEditableSurface({
   doc: titleDoc.value,
   ops: { apply: patches => titleDoc.ops.patch(patches) },
   triggers: {},
@@ -31,7 +31,7 @@ return (
   />
 )`
 
-export const COMPOSER_SNIPPET = `const c = useEditableComposer({
+export const COMPOSER_SNIPPET = `const c = useEditableSurface({
   doc,
   ops: { apply: patches => jd.ops.patch(patches) },
   triggers: { '@': 'mention', '/': 'command' },
