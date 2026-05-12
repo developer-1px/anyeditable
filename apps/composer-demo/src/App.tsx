@@ -3,7 +3,7 @@ import { useJsonDocument } from 'zod-crud'
 import {
   ComposerDoc, EMPTY_DOC, useEditableComposer,
   type JsonOps,
-} from 'editable-lifecycle'
+} from '@p/anyeditable'
 import { useTriggerCombobox } from './useTriggerCombobox.js'
 
 const USERS = [

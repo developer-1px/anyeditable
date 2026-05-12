@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — Rename: `editable-lifecycle` → `@p/anyeditable`
+
+Same library, clearer name. Package now scoped under `@p` alongside
+`@p/aria-kernel`. Covers all text-editable surfaces (`<input>`, `<textarea>`,
+`contenteditable`) — the previous "lifecycle" framing was too abstract.
+
+### Migration
+
+```diff
+-import { useEditableComposer } from 'editable-lifecycle'
++import { useEditableComposer } from '@p/anyeditable'
+```
+
+No runtime API changes.
+
 ## 0.3.2 — Hardening pass (caret clamp, sync-mirror SSOT, UX polish)
 
 ### Fixed
@@ -114,7 +129,7 @@
 
 ## 0.3.0 — Chat composer kernel (dogfood)
 
-3-패키지 가족(@p/aria-kernel + zod-crud + editable-lifecycle) 합성으로 chat composer
+3-패키지 가족(@p/aria-kernel + zod-crud + @p/anyeditable) 합성으로 chat composer
 kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Added — `useEditableComposer`

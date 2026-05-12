@@ -1,4 +1,4 @@
-# editable-lifecycle
+# @p/anyeditable
 
 Headless inline-edit kernels for React.
 **Two hooks, one identity** — markup·CSS·design tokens are 0건. Props 만 반환.
@@ -11,8 +11,8 @@ Headless inline-edit kernels for React.
 The v0.3 composer is part of a **3-package family** dogfooded together:
 
 ```
-editable-lifecycle ─▶ @p/aria-kernel  (useComboboxPattern, axes, fromList)
-editable-lifecycle ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
+@p/anyeditable ─▶ @p/aria-kernel  (useComboboxPattern, axes, fromList)
+@p/anyeditable ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
 ```
 
 — closed under W3C/IETF/WAI standards. No Lexical / ProseMirror / Slate.
@@ -20,7 +20,7 @@ editable-lifecycle ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
 ## Install
 
 ```bash
-npm i editable-lifecycle
+npm i @p/anyeditable
 # v0.3 composer additionally requires:
 npm i @p/aria-kernel zod-crud zod
 ```
@@ -28,7 +28,7 @@ npm i @p/aria-kernel zod-crud zod
 ## v0.2 — `useEditable` (cell / single-line edit)
 
 ```tsx
-import { useEditable } from 'editable-lifecycle'
+import { useEditable } from '@p/anyeditable'
 
 function CellGrid({ values, save }) {
   const ed = useEditable<string>({
@@ -54,11 +54,11 @@ What you get: IME-safe Enter/Escape · Type-to-edit · Navigate-after-commit · 
 ## v0.3 — `useEditableComposer` (chat composer)
 
 ```tsx
-import { useEditableComposer, useEphemeralCollection } from 'editable-lifecycle'
+import { useEditableComposer, useEphemeralCollection } from '@p/anyeditable'
 import { useJsonDocument } from 'zod-crud'
 import { fromList } from '@p/aria-kernel'
 import { useComboboxPattern } from '@p/aria-kernel/patterns'
-import { ComposerDoc, EMPTY_DOC } from 'editable-lifecycle'
+import { ComposerDoc, EMPTY_DOC } from '@p/anyeditable'
 
 function ChatComposer({ users, onSend }) {
   const jd = useJsonDocument(ComposerDoc, EMPTY_DOC, { history: 50 })

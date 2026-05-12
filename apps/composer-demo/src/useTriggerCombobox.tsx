@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { ROOT, type UiEvent } from '@p/aria-kernel'
 import { useComboboxPattern } from '@p/aria-kernel/patterns'
-import { useEphemeralCollection } from 'editable-lifecycle'
+import { useEphemeralCollection } from '@p/anyeditable'
 
 interface Trigger { kind: string; query: string; blockIdx: number }
 interface Item { id: string; label: string; name: string; [k: string]: unknown }

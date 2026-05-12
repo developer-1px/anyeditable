@@ -1,7 +1,7 @@
 {
-  "name": "editable-lifecycle",
-  "version": "0.3.2",
-  "description": "Headless inline-edit kernels for React. v0.2 useEditable (cell/single-line, IME-safe). v0.3 useEditableComposer (chat composer: contenteditable + @-mention + /-command + atomic chips, dogfooded with @p/aria-kernel + zod-crud). Vocabulary closed under W3C/IETF/WAI standards.",
+  "name": "@p/anyeditable",
+  "version": "0.4.0",
+  "description": "Headless React kernel for any text-editable surface (<input>, <textarea>, contenteditable). v0.2 useEditable (cell/single-line, IME-safe). v0.3 useEditableComposer (chat composer: @-mention + /-command + atomic chips, dogfooded with @p/aria-kernel + zod-crud). Vocabulary closed under W3C/IETF/WAI standards.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
