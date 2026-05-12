@@ -48,7 +48,14 @@ return editing === 'title'
   ? <input className="overlay" {...title.inputProps} />
   : <h3 onDoubleClick={() => title.startEdit('title')}>
       {content.title}
-    </h3>`
+    </h3>
+
+// 줄글 필드는 같은 inputProps를 textarea에 연결합니다.
+return editing === 'caption'
+  ? <textarea className="overlay caption" {...title.inputProps} />
+  : <p onDoubleClick={() => title.startEdit('caption')}>
+      {content.caption}
+    </p>`
 
 const COMPOSER_SNIPPET = `const c = useEditableComposer({
   doc,
@@ -309,6 +316,9 @@ function EditableVisual({
   startEdit: (id: VisualId, prefill?: string, options?: { caret?: 'end' | 'start' | 'select-all' | 'preserve' }) => void
 }) {
   if (editing === id) {
+    if (id === 'caption') {
+      return <textarea aria-label={label} className={`visual-input ${id}`} rows={3} {...inputProps} />
+    }
     return <input aria-label={label} className={`visual-input ${id}`} {...inputProps} />
   }
   return (

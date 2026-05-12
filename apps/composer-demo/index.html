@@ -178,6 +178,7 @@
         background: transparent;
         color: var(--ink);
         text-align: left;
+        overflow-wrap: anywhere;
       }
       .visual-field {
         cursor: pointer;
@@ -208,6 +209,12 @@
       .visual-input.caption {
         padding: 4px 6px;
         color: var(--muted);
+        line-height: 1.55;
+      }
+      textarea.visual-input.caption {
+        min-height: 88px;
+        resize: vertical;
+        font: inherit;
       }
       .visual-input {
         background: #fff;
