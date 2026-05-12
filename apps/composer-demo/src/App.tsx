@@ -21,8 +21,6 @@ const COMMANDS = [
 
 const CELL_IDS = ['A1', 'B1', 'C1', 'A2', 'B2', 'C2'] as const
 type CellId = typeof CELL_IDS[number]
-const VISUAL_IDS = ['title', 'status', 'caption'] as const
-type VisualId = typeof VISUAL_IDS[number]
 
 const INLINE_SNIPPET = `const ed = useEditable({
   getValue: id => values[id],
@@ -36,26 +34,26 @@ return ed.editing === id
       {values[id]}
     </button>`
 
-const VISUAL_SNIPPET = `const title = useEditable({
-  getValue: id => content[id],
-  onCommit: (id, next) => setContent(prev => ({
-    ...prev,
-    [id]: next,
-  })),
+const VISUAL_SNIPPET = `const titleDoc = useJsonDocument(
+  ComposerDoc,
+  { blocks: [{ kind: 'text', text: '캠페인 런칭' }] },
+)
+
+const title = useEditableComposer({
+  doc: titleDoc.value,
+  ops: { apply: patches => titleDoc.ops.patch(patches) },
+  triggers: {},
+  multiline: false,
+  label: 'title',
 })
 
-return editing === 'title'
-  ? <input className="overlay" {...title.inputProps} />
-  : <h3 onDoubleClick={() => title.startEdit('title')}>
-      {content.title}
-    </h3>
-
-// 줄글 필드는 같은 inputProps를 textarea에 연결합니다.
-return editing === 'caption'
-  ? <textarea className="overlay caption" {...title.inputProps} />
-  : <p onDoubleClick={() => title.startEdit('caption')}>
-      {content.caption}
-    </p>`
+return (
+  <h3
+    className="visual-field title"
+    ref={title.containerRef}
+    {...title.containerProps}
+  />
+)`
 
 const COMPOSER_SNIPPET = `const c = useEditableComposer({
   doc,
@@ -123,10 +121,10 @@ export function App() {
         </div>
       </NotebookSection>
 
-      <NotebookSection id="inline-edit" title="1. 기본형: inline edit">
+      <NotebookSection id="inline-edit" title="1. 기본형: visual contenteditable">
         <p>
           가장 중요한 사용 형태는 이미 렌더링된 시각적 콘텐츠를 그 자리에서 수정하는 것입니다.
-          제목, 배지, 캡션 같은 화면 요소를 그대로 보여주다가 편집 순간에만 input을 overlay합니다.
+          제목, 배지, 캡션 같은 화면 요소 자체를 <code>contenteditable</code> surface로 두고 바로 편집합니다.
         </p>
         <InlinePlayground />
       </NotebookSection>
@@ -173,11 +171,9 @@ function NotebookSection({ id, title, children }: { id: string; title: string; c
 }
 
 function InlinePlayground() {
-  const [content, setContent] = useState<Record<VisualId, string>>({
-    title: '캠페인 런칭',
-    status: '검토 중',
-    caption: '이 미리보기의 라벨을 더블클릭해서 바로 수정합니다.',
-  })
+  const status = useVisualComposer('검토 중', { label: 'status', multiline: false })
+  const title = useVisualComposer('캠페인 런칭', { label: 'title', multiline: false })
+  const caption = useVisualComposer('이 미리보기의 라벨을 클릭해서 그대로 수정합니다.', { label: 'caption', multiline: true })
   const [values, setValues] = useState<Record<CellId, string>>({
     A1: 'Roadmap',
     B1: 'In review',
@@ -185,12 +181,6 @@ function InlinePlayground() {
     A2: 'Composer',
     B2: 'Ready',
     C2: 'v0.4',
-  })
-
-  const visual = useEditable<VisualId>({
-    getValue: (id) => content[id],
-    onCommit: (id, next) => setContent(prev => ({ ...prev, [id]: next })),
-    initialFocus: 'title',
   })
 
   const ed = useEditable<CellId>({
@@ -204,57 +194,32 @@ function InlinePlayground() {
     <>
       <div className="example">
         <div className="playground">
-          <h3>실행: visual content overlay</h3>
-          <div
-            className="visual-card"
-            onKeyDown={(e) => {
-              if (visual.focusId) visual.handleTypeToEdit(e, visual.focusId)
-            }}
-          >
+          <h3>실행: visual contenteditable</h3>
+          <div className="visual-card">
             <div className="visual-art" aria-hidden="true" />
             <div className="visual-copy">
-              <EditableVisual
-                id="status"
-                label="status"
-                editing={visual.editing}
-                focusId={visual.focusId}
-                value={content.status}
-                inputProps={visual.inputProps}
-                setFocusId={visual.setFocusId}
-                startEdit={visual.startEdit}
-              />
-              <EditableVisual
-                id="title"
-                label="title"
-                editing={visual.editing}
-                focusId={visual.focusId}
-                value={content.title}
-                inputProps={visual.inputProps}
-                setFocusId={visual.setFocusId}
-                startEdit={visual.startEdit}
-              />
-              <EditableVisual
-                id="caption"
-                label="caption"
-                editing={visual.editing}
-                focusId={visual.focusId}
-                value={content.caption}
-                inputProps={visual.inputProps}
-                setFocusId={visual.setFocusId}
-                startEdit={visual.startEdit}
-              />
+              <div className="visual-field status" ref={status.c.containerRef} {...status.c.containerProps} />
+              {status.c.portals}
+              <h3 className="visual-field title" ref={title.c.containerRef} {...title.c.containerProps} />
+              {title.c.portals}
+              <div className="visual-field caption" ref={caption.c.containerRef} {...caption.c.containerProps} />
+              {caption.c.portals}
             </div>
           </div>
-          <p className="hint">더블클릭 또는 포커스 후 타이핑. Enter는 commit, Escape는 cancel, blur는 commit입니다.</p>
+          <p className="hint">각 텍스트를 클릭하고 바로 타이핑하세요. 화면에 보이는 요소가 그대로 contenteditable입니다.</p>
         </div>
         <div className="observe">
           <h3>관찰</h3>
-          <pre>{JSON.stringify({ focusId: visual.focusId, editing: visual.editing, draft: visual.draft, content }, null, 2)}</pre>
+          <pre>{JSON.stringify({
+            status: { text: status.text, doc: status.doc },
+            title: { text: title.text, doc: title.doc },
+            caption: { text: caption.text, doc: caption.doc },
+          }, null, 2)}</pre>
         </div>
         <CodeBlock code={VISUAL_SNIPPET} />
       </div>
 
-      <h3 className="subexample-title">다음 예제: cell/grid에서도 같은 lifecycle을 재사용</h3>
+      <h3 className="subexample-title">다음 예제: input 기반 cell/grid inline edit</h3>
       <p>
         같은 `useEditable` hook을 표나 그리드에 붙이면 type-to-edit, 이동 후 commit, blur commit을 그대로 재사용할 수 있습니다.
       </p>
@@ -296,41 +261,28 @@ function InlinePlayground() {
   )
 }
 
-function EditableVisual({
-  id,
-  label,
-  editing,
-  focusId,
-  value,
-  inputProps,
-  setFocusId,
-  startEdit,
-}: {
-  id: VisualId
-  label: string
-  editing: VisualId | null
-  focusId: VisualId | null
-  value: string
-  inputProps: ReturnType<typeof useEditable<VisualId>>['inputProps']
-  setFocusId: (id: VisualId | null) => void
-  startEdit: (id: VisualId, prefill?: string, options?: { caret?: 'end' | 'start' | 'select-all' | 'preserve' }) => void
-}) {
-  if (editing === id) {
-    if (id === 'caption') {
-      return <textarea aria-label={label} className={`visual-input ${id}`} rows={3} {...inputProps} />
-    }
-    return <input aria-label={label} className={`visual-input ${id}`} {...inputProps} />
-  }
-  return (
-    <button
-      className={focusId === id ? `visual-field ${id} active` : `visual-field ${id}`}
-      type="button"
-      onClick={() => setFocusId(id)}
-      onDoubleClick={() => startEdit(id, undefined, { caret: 'select-all' })}
-    >
-      {value}
-    </button>
+function useVisualComposer(initialText: string, opts: { label: string; multiline: boolean }) {
+  const initialDoc = useMemo(() => textDoc(initialText), [initialText])
+  const jd = useJsonDocument(
+    ComposerDoc as unknown as Parameters<typeof useJsonDocument>[0],
+    initialDoc, { history: 20 },
   )
+  const doc = jd.value as typeof EMPTY_DOC
+  const ops = useMemo<JsonOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
+  const c = useEditableComposer({
+    doc,
+    ops,
+    triggers: {},
+    multiline: opts.multiline,
+    label: opts.label,
+    spellCheck: true,
+  })
+
+  return { doc, text: serialize(doc), c }
+}
+
+function textDoc(text: string): typeof EMPTY_DOC {
+  return { blocks: [{ kind: 'text', text }] }
 }
 
 function ComposerPlayground() {
