@@ -1,7 +1,7 @@
 # composer-demo
 
-Real-browser smoke for `editable-lifecycle` v0.3 chat composer.
-Exercises the whole 3-package family (`editable-lifecycle` + `@p/aria-kernel` + `zod-crud`)
+Real-browser smoke for `@p/anyeditable` v0.3 chat composer.
+Exercises the whole 3-package family (`@p/anyeditable` + `@p/aria-kernel` + `zod-crud`)
 in a single `App.tsx`.
 
 ## Run
@@ -55,5 +55,5 @@ src/
 └── main.tsx    # React 19 root
 ```
 
-Zero kernel internals are imported — only `editable-lifecycle` public exports + the
+Zero kernel internals are imported — only `@p/anyeditable` public exports + the
 two peer packages. If this runs, the dogfooding contract holds.
