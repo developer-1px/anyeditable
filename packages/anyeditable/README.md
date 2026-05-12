@@ -53,8 +53,6 @@ What you get: IME-safe Enter/Escape · Type-to-edit · Navigate-after-commit · 
 
 ## v0.3 — `useEditableSurface` (contenteditable surface)
 
-`useEditableComposer` is still exported as a backwards-compatible alias, but new usage should prefer `useEditableSurface`.
-
 ```tsx
 import { useEditableSurface, useEphemeralCollection } from '@p/anyeditable'
 import { useJsonDocument } from 'zod-crud'

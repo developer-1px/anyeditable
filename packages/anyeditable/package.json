@@ -1,7 +1,7 @@
 {
   "name": "@p/anyeditable",
   "version": "0.4.0",
-  "description": "Headless React kernel for any text-editable surface (<input>, <textarea>, contenteditable). v0.2 useEditable (cell/single-line, IME-safe). v0.3 useEditableComposer (chat composer: @-mention + /-command + atomic chips, dogfooded with @p/aria-kernel + zod-crud). Vocabulary closed under W3C/IETF/WAI standards.",
+  "description": "Headless React kernels for any text-editable surface. useEditable covers input/textarea/select inline edits; useEditableSurface covers contenteditable visual surfaces, composers, triggers, and atomic chips.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -24,7 +24,7 @@
     "edit",
     "inline-edit",
     "contenteditable",
-    "chat-composer",
+    "editable-surface",
     "mention",
     "slash-command",
     "ime",

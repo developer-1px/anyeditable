@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.1 — Rename contenteditable primitive to `useEditableSurface`
+
+`useEditableComposer` made the contenteditable primitive sound chat-specific.
+The implementation is now named `useEditableSurface`, which reflects the actual
+responsibility: keep any contenteditable surface synchronized with `ComposerDoc`
+through Input Events, Selection, RFC 6902 patches, DOM reconciliation, and
+optional triggers/atomic blocks.
+
+### Changed
+
+- Added `useEditableSurface` as the primary public API for contenteditable surfaces.
+- Moved implementation to `composer/useEditableSurface.ts`.
+- Updated demo, README, package metadata, and usage snippets to use `useEditableSurface`.
+- Renamed primary hook tests to `useEditableSurface`.
+
+### Compatibility
+
+- `useEditableComposer` remains as a thin backwards-compatible alias.
+
 ## 0.4.0 — Rename: `editable-lifecycle` → `@p/anyeditable`
 
 Same library, clearer name. Package now scoped under `@p` alongside

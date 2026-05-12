@@ -1,29 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useEditableComposer, type UseEditableComposerOptions } from '../useEditableComposer.js'
-import { useEditableSurface } from '../useEditableSurface.js'
+import { useEditableSurface, type UseEditableSurfaceOptions } from '../useEditableSurface.js'
 import { EMPTY_DOC, type ComposerDoc, type Block } from '../schema.js'
 
-function setup(over: Partial<UseEditableComposerOptions> = {}) {
+function setup(over: Partial<UseEditableSurfaceOptions> = {}) {
   let doc: ComposerDoc = EMPTY_DOC as ComposerDoc
   const applied: unknown[] = []
   const ops = { apply: (p: readonly unknown[]) => { applied.push(p) } }
-  const opts: UseEditableComposerOptions = {
+  const opts: UseEditableSurfaceOptions = {
     doc, ops,
     triggers: { '@': 'mention', '/': 'command' },
     ...over,
   }
-  const { result, rerender } = renderHook(({ d }: { d: ComposerDoc }) => useEditableComposer({ ...opts, doc: d }), {
+  const { result, rerender } = renderHook(({ d }: { d: ComposerDoc }) => useEditableSurface({ ...opts, doc: d }), {
     initialProps: { d: doc },
   })
   return { result, rerender, applied, setDoc: (next: ComposerDoc) => { doc = next; rerender({ d: next }) } }
 }
 
-describe('useEditableComposer', () => {
-  it('is a backwards-compatible alias for useEditableSurface', () => {
-    expect(useEditableComposer).toBe(useEditableSurface)
-  })
-
+describe('useEditableSurface', () => {
   it('returns containerProps with textbox role + content-editable when not readOnly', () => {
     const { result } = setup()
     expect(result.current.containerProps.role).toBe('textbox')
