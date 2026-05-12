@@ -146,6 +146,78 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
       }
+      .visual-card {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 16px;
+        min-height: 220px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--soft);
+      }
+      .visual-art {
+        min-height: 190px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(135deg, rgba(9, 105, 218, .18), rgba(26, 127, 55, .14)),
+          repeating-linear-gradient(45deg, #fff, #fff 10px, #f1f6fb 10px, #f1f6fb 20px);
+      }
+      .visual-copy {
+        display: grid;
+        align-content: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .visual-field,
+      .visual-input {
+        width: 100%;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--ink);
+        text-align: left;
+      }
+      .visual-field {
+        cursor: pointer;
+      }
+      .visual-field:hover,
+      .visual-field.active {
+        border-color: var(--green);
+        background: #dafbe1;
+      }
+      .visual-field.status,
+      .visual-input.status {
+        justify-self: start;
+        width: auto;
+        padding: 3px 8px;
+        background: #ddf4ff;
+        color: #0969da;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .visual-field.title,
+      .visual-input.title {
+        padding: 4px 6px;
+        font-size: 27px;
+        line-height: 1.15;
+        font-weight: 800;
+      }
+      .visual-field.caption,
+      .visual-input.caption {
+        padding: 4px 6px;
+        color: var(--muted);
+      }
+      .visual-input {
+        background: #fff;
+        border-color: var(--green);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(26, 127, 55, .14);
+      }
+      .subexample-title {
+        margin-top: 26px;
+      }
       .cell,
       .cell-input {
         width: 100%;
@@ -260,7 +332,8 @@
         }
         .api-groups,
         .example,
-        .cell-grid {
+        .cell-grid,
+        .visual-card {
           grid-template-columns: 1fr;
         }
         h1 { font-size: 30px; }

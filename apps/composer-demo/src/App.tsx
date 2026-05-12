@@ -21,6 +21,8 @@ const COMMANDS = [
 
 const CELL_IDS = ['A1', 'B1', 'C1', 'A2', 'B2', 'C2'] as const
 type CellId = typeof CELL_IDS[number]
+const VISUAL_IDS = ['title', 'status', 'caption'] as const
+type VisualId = typeof VISUAL_IDS[number]
 
 const INLINE_SNIPPET = `const ed = useEditable({
   getValue: id => values[id],
@@ -33,6 +35,20 @@ return ed.editing === id
   : <button onDoubleClick={() => ed.startEdit(id)}>
       {values[id]}
     </button>`
+
+const VISUAL_SNIPPET = `const title = useEditable({
+  getValue: id => content[id],
+  onCommit: (id, next) => setContent(prev => ({
+    ...prev,
+    [id]: next,
+  })),
+})
+
+return editing === 'title'
+  ? <input className="overlay" {...title.inputProps} />
+  : <h3 onDoubleClick={() => title.startEdit('title')}>
+      {content.title}
+    </h3>`
 
 const COMPOSER_SNIPPET = `const c = useEditableComposer({
   doc,
@@ -102,8 +118,8 @@ export function App() {
 
       <NotebookSection id="inline-edit" title="1. 기본형: inline edit">
         <p>
-          가장 작은 사용 형태입니다. 셀을 더블클릭하거나, 셀을 선택한 뒤 바로 타이핑하면 edit mode로 들어갑니다.
-          Enter/Tab은 commit과 이동, Escape는 cancel, blur는 commit입니다.
+          가장 중요한 사용 형태는 이미 렌더링된 시각적 콘텐츠를 그 자리에서 수정하는 것입니다.
+          제목, 배지, 캡션 같은 화면 요소를 그대로 보여주다가 편집 순간에만 input을 overlay합니다.
         </p>
         <InlinePlayground />
       </NotebookSection>
@@ -150,6 +166,11 @@ function NotebookSection({ id, title, children }: { id: string; title: string; c
 }
 
 function InlinePlayground() {
+  const [content, setContent] = useState<Record<VisualId, string>>({
+    title: '캠페인 런칭',
+    status: '검토 중',
+    caption: '이 미리보기의 라벨을 더블클릭해서 바로 수정합니다.',
+  })
   const [values, setValues] = useState<Record<CellId, string>>({
     A1: 'Roadmap',
     B1: 'In review',
@@ -157,6 +178,12 @@ function InlinePlayground() {
     A2: 'Composer',
     B2: 'Ready',
     C2: 'v0.4',
+  })
+
+  const visual = useEditable<VisualId>({
+    getValue: (id) => content[id],
+    onCommit: (id, next) => setContent(prev => ({ ...prev, [id]: next })),
+    initialFocus: 'title',
   })
 
   const ed = useEditable<CellId>({
@@ -167,40 +194,132 @@ function InlinePlayground() {
   })
 
   return (
-    <div className="example">
-      <div className="playground">
-        <h3>Playground</h3>
-        <div
-          className="cell-grid"
-          onKeyDown={(e) => {
-            if (ed.focusId) ed.handleTypeToEdit(e, ed.focusId)
-          }}
-        >
-          {CELL_IDS.map(id => {
-            const focused = ed.focusId === id
-            return ed.editing === id ? (
-              <input key={id} aria-label={id} className="cell-input" {...ed.inputProps} />
-            ) : (
-              <button
-                key={id}
-                className={focused ? 'cell active' : 'cell'}
-                type="button"
-                onClick={() => ed.setFocusId(id)}
-                onDoubleClick={() => ed.startEdit(id, undefined, { caret: 'select-all' })}
-              >
-                <span>{id}</span>
-                <strong>{values[id]}</strong>
-              </button>
-            )
-          })}
+    <>
+      <div className="example">
+        <div className="playground">
+          <h3>실행: visual content overlay</h3>
+          <div
+            className="visual-card"
+            onKeyDown={(e) => {
+              if (visual.focusId) visual.handleTypeToEdit(e, visual.focusId)
+            }}
+          >
+            <div className="visual-art" aria-hidden="true" />
+            <div className="visual-copy">
+              <EditableVisual
+                id="status"
+                label="status"
+                editing={visual.editing}
+                focusId={visual.focusId}
+                value={content.status}
+                inputProps={visual.inputProps}
+                setFocusId={visual.setFocusId}
+                startEdit={visual.startEdit}
+              />
+              <EditableVisual
+                id="title"
+                label="title"
+                editing={visual.editing}
+                focusId={visual.focusId}
+                value={content.title}
+                inputProps={visual.inputProps}
+                setFocusId={visual.setFocusId}
+                startEdit={visual.startEdit}
+              />
+              <EditableVisual
+                id="caption"
+                label="caption"
+                editing={visual.editing}
+                focusId={visual.focusId}
+                value={content.caption}
+                inputProps={visual.inputProps}
+                setFocusId={visual.setFocusId}
+                startEdit={visual.startEdit}
+              />
+            </div>
+          </div>
+          <p className="hint">더블클릭 또는 포커스 후 타이핑. Enter는 commit, Escape는 cancel, blur는 commit입니다.</p>
         </div>
+        <div className="observe">
+          <h3>관찰</h3>
+          <pre>{JSON.stringify({ focusId: visual.focusId, editing: visual.editing, draft: visual.draft, content }, null, 2)}</pre>
+        </div>
+        <CodeBlock code={VISUAL_SNIPPET} />
       </div>
-      <div className="observe">
-        <h3>Observe</h3>
-        <pre>{JSON.stringify({ focusId: ed.focusId, editing: ed.editing, draft: ed.draft, values }, null, 2)}</pre>
+
+      <h3 className="subexample-title">다음 예제: cell/grid에서도 같은 lifecycle을 재사용</h3>
+      <p>
+        같은 `useEditable` hook을 표나 그리드에 붙이면 type-to-edit, 이동 후 commit, blur commit을 그대로 재사용할 수 있습니다.
+      </p>
+      <div className="example">
+        <div className="playground">
+          <h3>실행: cell edit</h3>
+          <div
+            className="cell-grid"
+            onKeyDown={(e) => {
+              if (ed.focusId) ed.handleTypeToEdit(e, ed.focusId)
+            }}
+          >
+            {CELL_IDS.map(id => {
+              const focused = ed.focusId === id
+              return ed.editing === id ? (
+                <input key={id} aria-label={id} className="cell-input" {...ed.inputProps} />
+              ) : (
+                <button
+                  key={id}
+                  className={focused ? 'cell active' : 'cell'}
+                  type="button"
+                  onClick={() => ed.setFocusId(id)}
+                  onDoubleClick={() => ed.startEdit(id, undefined, { caret: 'select-all' })}
+                >
+                  <span>{id}</span>
+                  <strong>{values[id]}</strong>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="observe">
+          <h3>관찰</h3>
+          <pre>{JSON.stringify({ focusId: ed.focusId, editing: ed.editing, draft: ed.draft, values }, null, 2)}</pre>
+        </div>
+        <CodeBlock code={INLINE_SNIPPET} />
       </div>
-      <CodeBlock code={INLINE_SNIPPET} />
-    </div>
+    </>
+  )
+}
+
+function EditableVisual({
+  id,
+  label,
+  editing,
+  focusId,
+  value,
+  inputProps,
+  setFocusId,
+  startEdit,
+}: {
+  id: VisualId
+  label: string
+  editing: VisualId | null
+  focusId: VisualId | null
+  value: string
+  inputProps: ReturnType<typeof useEditable<VisualId>>['inputProps']
+  setFocusId: (id: VisualId | null) => void
+  startEdit: (id: VisualId, prefill?: string, options?: { caret?: 'end' | 'start' | 'select-all' | 'preserve' }) => void
+}) {
+  if (editing === id) {
+    return <input aria-label={label} className={`visual-input ${id}`} {...inputProps} />
+  }
+  return (
+    <button
+      className={focusId === id ? `visual-field ${id} active` : `visual-field ${id}`}
+      type="button"
+      onClick={() => setFocusId(id)}
+      onDoubleClick={() => startEdit(id, undefined, { caret: 'select-all' })}
+    >
+      {value}
+    </button>
   )
 }
 
@@ -260,7 +379,7 @@ function ComposerPlayground() {
   return (
     <div className="example">
       <div className="playground">
-        <h3>Playground</h3>
+        <h3>실행</h3>
         <div
           className="composer"
           ref={c.containerRef}
@@ -278,7 +397,7 @@ function ComposerPlayground() {
         <p className="hint">@b, /r, Escape, Shift+Enter, Cmd/Ctrl+Z를 시도해보세요.</p>
       </div>
       <div className="observe">
-        <h3>Observe</h3>
+        <h3>관찰</h3>
         <pre>{JSON.stringify({ doc, text: serialize(doc), trigger: c.trigger, submitted }, null, 2)}</pre>
         <pre className="submitted">{submitted !== null ? JSON.stringify(submitted, null, 2) : '(press Enter)'}</pre>
       </div>
@@ -290,7 +409,7 @@ function ComposerPlayground() {
 function CodeBlock({ code }: { code: string }) {
   return (
     <div className="code-cell">
-      <h3>Code</h3>
+      <h3>사용 코드</h3>
       <pre><code>{code}</code></pre>
     </div>
   )
