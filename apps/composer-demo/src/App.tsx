@@ -1,78 +1,14 @@
-import { useMemo, useState, type HTMLAttributes, type KeyboardEvent, type LiHTMLAttributes, type ReactNode } from 'react'
-import { useJsonDocument } from 'zod-crud'
-import {
-  ComposerDoc, EMPTY_DOC, serialize, useEditable, useEditableComposer,
-  type JsonOps, type NavDir,
-} from '@p/anyeditable'
-import { useTriggerCombobox } from './useTriggerCombobox.js'
-
-const USERS = [
-  { id: 'u1', label: 'Bob', name: 'bob' },
-  { id: 'u2', label: 'Alice', name: 'alice' },
-  { id: 'u3', label: 'Charlie', name: 'charlie' },
-  { id: 'u4', label: 'Dave', name: 'dave' },
-]
-
-const COMMANDS = [
-  { id: 'run', label: 'Run last task', name: 'run' },
-  { id: 'help', label: 'Show help', name: 'help' },
-  { id: 'undo', label: 'Undo last commit', name: 'undo' },
-]
-
-const CELL_IDS = ['A1', 'B1', 'C1', 'A2', 'B2', 'C2'] as const
-type CellId = typeof CELL_IDS[number]
-
-const INLINE_SNIPPET = `const ed = useEditable({
-  getValue: id => values[id],
-  onCommit: (id, next) => save(id, next),
-  onNavigate: (id, dir) => nextCell(id, dir),
-})
-
-return ed.editing === id
-  ? <input {...ed.inputProps} />
-  : <button onDoubleClick={() => ed.startEdit(id)}>
-      {values[id]}
-    </button>`
-
-const VISUAL_SNIPPET = `const titleDoc = useJsonDocument(
-  ComposerDoc,
-  { blocks: [{ kind: 'text', text: '캠페인 런칭' }] },
-)
-
-const title = useEditableComposer({
-  doc: titleDoc.value,
-  ops: { apply: patches => titleDoc.ops.patch(patches) },
-  triggers: {},
-  multiline: false,
-  label: 'title',
-})
-
-return (
-  <h3
-    className="visual-field title"
-    ref={title.containerRef}
-    {...title.containerProps}
-  />
-)`
-
-const COMPOSER_SNIPPET = `const c = useEditableComposer({
-  doc,
-  ops: { apply: patches => jd.ops.patch(patches) },
-  triggers: { '@': 'mention', '/': 'command' },
-  renderAtomic: block => <Chip block={block} />,
-  onSubmit: ({ doc, text }) => send(doc, text),
-})
-
-if (c.trigger) {
-  c.commitAtomic({ kind: 'mention', id, label })
-}`
+import { NotebookSection } from './docs/NotebookSection.js'
+import { CellInlineEditExample } from './examples/CellInlineEditExample.js'
+import { ComposerExample } from './examples/ComposerExample.js'
+import { VisualContenteditableExample } from './examples/VisualContenteditableExample.js'
 
 const API_GROUPS = [
   {
     title: '주요 hook',
     rows: [
+      ['useEditableComposer', 'contenteditable 기반 visual surface와 composer lifecycle'],
       ['useEditable', 'input, textarea, select 기반 inline edit lifecycle'],
-      ['useEditableComposer', 'contenteditable 기반 composer lifecycle'],
     ],
   },
   {
@@ -126,18 +62,26 @@ export function App() {
           가장 중요한 사용 형태는 이미 렌더링된 시각적 콘텐츠를 그 자리에서 수정하는 것입니다.
           제목, 배지, 캡션 같은 화면 요소 자체를 <code>contenteditable</code> surface로 두고 바로 편집합니다.
         </p>
-        <InlinePlayground />
+        <VisualContenteditableExample />
       </NotebookSection>
 
-      <NotebookSection id="composer" title="2. 확장형: contenteditable composer">
+      <NotebookSection id="cell-inline-edit" title="2. input 기반 cell/grid inline edit">
         <p>
-          contenteditable로 넘어가면 IME, selection, paste, atomic chip 같은 문제가 생깁니다.
-          `useEditableComposer`는 이 영역을 flat `ComposerDoc`과 patch 흐름으로 다룹니다.
+          같은 lifecycle을 표나 그리드에 붙이면 type-to-edit, 이동 후 commit, blur commit을 재사용할 수 있습니다.
+          이 예제는 <code>useEditable</code>의 input 기반 usage만 보여줍니다.
         </p>
-        <ComposerPlayground />
+        <CellInlineEditExample />
       </NotebookSection>
 
-      <NotebookSection id="internals" title="3. 내부 흐름">
+      <NotebookSection id="composer" title="3. 확장형: contenteditable composer">
+        <p>
+          채팅 composer처럼 trigger, atomic chip, submit이 필요해지면 같은 <code>useEditableComposer</code>를 더 넓게 씁니다.
+          이 영역은 flat <code>ComposerDoc</code>과 patch 흐름으로 다룹니다.
+        </p>
+        <ComposerExample />
+      </NotebookSection>
+
+      <NotebookSection id="internals" title="4. 내부 흐름">
         <p>현재 composer의 핵심 흐름은 아래 정도로만 이해하면 됩니다. 파일 구조 설명은 이 흐름 뒤에 붙는 보조 정보입니다.</p>
         <ol className="flow">
           <li><strong>Input Events</strong><span>beforeinput, compositionend가 native edit intent를 만든다.</span></li>
@@ -147,7 +91,7 @@ export function App() {
         </ol>
       </NotebookSection>
 
-      <NotebookSection id="tests" title="4. 테스트 계약">
+      <NotebookSection id="tests" title="5. 테스트 계약">
         <p>
           현재 demo는 문서이면서 browser smoke surface입니다. composer 계약은 기존 e2e가 계속 검증합니다.
         </p>
@@ -159,255 +103,4 @@ export function App() {
       </NotebookSection>
     </main>
   )
-}
-
-function NotebookSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section id={id} className="notebook-section">
-      <h2>{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-function InlinePlayground() {
-  const status = useVisualComposer('검토 중', { label: 'status', multiline: false })
-  const title = useVisualComposer('캠페인 런칭', { label: 'title', multiline: false })
-  const caption = useVisualComposer('이 미리보기의 라벨을 클릭해서 그대로 수정합니다.', { label: 'caption', multiline: true })
-  const [values, setValues] = useState<Record<CellId, string>>({
-    A1: 'Roadmap',
-    B1: 'In review',
-    C1: 'Q2',
-    A2: 'Composer',
-    B2: 'Ready',
-    C2: 'v0.4',
-  })
-
-  const ed = useEditable<CellId>({
-    getValue: (id) => values[id],
-    onCommit: (id, next) => setValues(prev => ({ ...prev, [id]: next })),
-    onNavigate: (id, dir) => nextCell(id, dir),
-    initialFocus: 'A1',
-  })
-
-  return (
-    <>
-      <div className="example">
-        <div className="playground">
-          <h3>실행: visual contenteditable</h3>
-          <div className="visual-card">
-            <div className="visual-art" aria-hidden="true" />
-            <div className="visual-copy">
-              <div className="visual-field status" ref={status.c.containerRef} {...status.c.containerProps} />
-              {status.c.portals}
-              <h3 className="visual-field title" ref={title.c.containerRef} {...title.c.containerProps} />
-              {title.c.portals}
-              <div className="visual-field caption" ref={caption.c.containerRef} {...caption.c.containerProps} />
-              {caption.c.portals}
-            </div>
-          </div>
-          <p className="hint">각 텍스트를 클릭하고 바로 타이핑하세요. 화면에 보이는 요소가 그대로 contenteditable입니다.</p>
-        </div>
-        <div className="observe">
-          <h3>관찰</h3>
-          <pre>{JSON.stringify({
-            status: { text: status.text, doc: status.doc },
-            title: { text: title.text, doc: title.doc },
-            caption: { text: caption.text, doc: caption.doc },
-          }, null, 2)}</pre>
-        </div>
-        <CodeBlock code={VISUAL_SNIPPET} />
-      </div>
-
-      <h3 className="subexample-title">다음 예제: input 기반 cell/grid inline edit</h3>
-      <p>
-        같은 `useEditable` hook을 표나 그리드에 붙이면 type-to-edit, 이동 후 commit, blur commit을 그대로 재사용할 수 있습니다.
-      </p>
-      <div className="example">
-        <div className="playground">
-          <h3>실행: cell edit</h3>
-          <div
-            className="cell-grid"
-            onKeyDown={(e) => {
-              if (ed.focusId) ed.handleTypeToEdit(e, ed.focusId)
-            }}
-          >
-            {CELL_IDS.map(id => {
-              const focused = ed.focusId === id
-              return ed.editing === id ? (
-                <input key={id} aria-label={id} className="cell-input" {...ed.inputProps} />
-              ) : (
-                <button
-                  key={id}
-                  className={focused ? 'cell active' : 'cell'}
-                  type="button"
-                  onClick={() => ed.setFocusId(id)}
-                  onDoubleClick={() => ed.startEdit(id, undefined, { caret: 'select-all' })}
-                >
-                  <span>{id}</span>
-                  <strong>{values[id]}</strong>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-        <div className="observe">
-          <h3>관찰</h3>
-          <pre>{JSON.stringify({ focusId: ed.focusId, editing: ed.editing, draft: ed.draft, values }, null, 2)}</pre>
-        </div>
-        <CodeBlock code={INLINE_SNIPPET} />
-      </div>
-    </>
-  )
-}
-
-function useVisualComposer(initialText: string, opts: { label: string; multiline: boolean }) {
-  const initialDoc = useMemo(() => textDoc(initialText), [initialText])
-  const jd = useJsonDocument(
-    ComposerDoc as unknown as Parameters<typeof useJsonDocument>[0],
-    initialDoc, { history: 20 },
-  )
-  const doc = jd.value as typeof EMPTY_DOC
-  const ops = useMemo<JsonOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
-  const c = useEditableComposer({
-    doc,
-    ops,
-    triggers: {},
-    multiline: opts.multiline,
-    label: opts.label,
-    spellCheck: true,
-  })
-
-  return { doc, text: serialize(doc), c }
-}
-
-function textDoc(text: string): typeof EMPTY_DOC {
-  return { blocks: [{ kind: 'text', text }] }
-}
-
-function ComposerPlayground() {
-  const [submitted, setSubmitted] = useState<unknown>(null)
-  const jd = useJsonDocument(
-    ComposerDoc as unknown as Parameters<typeof useJsonDocument>[0],
-    EMPTY_DOC, { history: 50 },
-  )
-  const doc = jd.value as typeof EMPTY_DOC
-  const ops = useMemo<JsonOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
-
-  const c = useEditableComposer({
-    doc, ops,
-    triggers: { '@': 'mention', '/': 'command' },
-    placeholder: 'Ask @bob to /run the last task',
-    spellCheck: true,
-    maxLength: 500,
-    renderAtomic: (b) => b.kind === 'mention'
-      ? <span className="chip">@{b.label}</span>
-      : b.kind === 'command'
-      ? <span className="chip command">/{b.name}</span>
-      : null,
-    onSubmit: ({ doc: d, text }) => { setSubmitted({ doc: d, text }); jd.ops.load(EMPTY_DOC) },
-    onUndo: () => { jd.commands.undo() },
-    onRedo: () => { jd.commands.redo() },
-  })
-
-  const items = useMemo(() => {
-    if (!c.trigger) return []
-    const pool = c.trigger.kind === 'mention' ? USERS : COMMANDS
-    return pool.filter(it => it.name.startsWith(c.trigger!.query))
-  }, [c.trigger])
-
-  const cb = useTriggerCombobox(c.trigger, items, (it) => {
-    c.commitAtomic(c.trigger!.kind === 'mention'
-      ? { kind: 'mention', id: it.id, label: it.name }
-      : { kind: 'command', name: it.name })
-  })
-
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (!c.trigger) return
-    if (e.key === 'Escape') { e.preventDefault(); c.cancelTrigger(); return }
-    if (/^(Arrow|Enter|Home|End)/.test(e.key)) cb.comboboxProps.onKeyDown?.(e)
-  }
-
-  const onComposerKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (!c.trigger && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey && (e.key === 'Home' || e.key === 'End')) {
-      e.preventDefault()
-      moveCaretToEdge(e.currentTarget, e.key === 'End' ? 'end' : 'start')
-      return
-    }
-    onKeyDown(e)
-    c.containerProps.onKeyDown?.(e)
-  }
-
-  return (
-    <div className="example">
-      <div className="playground">
-        <h3>실행</h3>
-        <div
-          className="composer"
-          ref={c.containerRef}
-          {...c.containerProps}
-          onKeyDown={onComposerKeyDown}
-        />
-        {c.portals}
-        {c.trigger && items.length > 0 && (
-          <ul className="popover" {...(cb.listboxProps as HTMLAttributes<HTMLUListElement>)} hidden={false}>
-            {items.map(it => (
-              <li key={it.id} {...(cb.optionProps(it.id) as LiHTMLAttributes<HTMLLIElement>)}>{String(it.label ?? it.id)}</li>
-            ))}
-          </ul>
-        )}
-        <p className="hint">@b, /r, Escape, Shift+Enter, Cmd/Ctrl+Z를 시도해보세요.</p>
-      </div>
-      <div className="observe">
-        <h3>관찰</h3>
-        <pre>{JSON.stringify({ doc, text: serialize(doc), trigger: c.trigger, submitted }, null, 2)}</pre>
-        <pre className="submitted">{submitted !== null ? JSON.stringify(submitted, null, 2) : '(press Enter)'}</pre>
-      </div>
-      <CodeBlock code={COMPOSER_SNIPPET} />
-    </div>
-  )
-}
-
-function CodeBlock({ code }: { code: string }) {
-  return (
-    <div className="code-cell">
-      <h3>사용 코드</h3>
-      <pre><code>{code}</code></pre>
-    </div>
-  )
-}
-
-function nextCell(id: CellId, dir: NavDir): CellId | null {
-  const idx = CELL_IDS.indexOf(id)
-  const col = idx % 3
-  const row = Math.floor(idx / 3)
-  const next =
-    dir === 'right' ? idx + 1
-    : dir === 'left' ? idx - 1
-    : dir === 'down' ? (row + 1) * 3 + col
-    : (row - 1) * 3 + col
-  return CELL_IDS[next] ?? null
-}
-
-function moveCaretToEdge(root: HTMLElement, edge: 'start' | 'end') {
-  root.focus()
-  const doc = root.ownerDocument
-  const sel = doc.getSelection()
-  if (!sel) return
-  const range = doc.createRange()
-  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-  let first: Text | null = null
-  let last: Text | null = null
-  let node = walker.nextNode()
-  while (node) {
-    if (!first) first = node as Text
-    last = node as Text
-    node = walker.nextNode()
-  }
-  if (edge === 'start' && first) range.setStart(first, 0)
-  else if (edge === 'end' && last) range.setStart(last, last.nodeValue?.length ?? 0)
-  else range.setStart(root, edge === 'start' ? 0 : root.childNodes.length)
-  range.collapse(true)
-  sel.removeAllRanges()
-  sel.addRange(range)
 }
