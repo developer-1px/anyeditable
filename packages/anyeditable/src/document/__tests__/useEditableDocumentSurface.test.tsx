@@ -159,6 +159,23 @@ describe('useEditableDocumentSurface', () => {
     await waitFor(() => expect(applied.at(-1)?.[0]?.value).toBe('한ㄱ'))
     expect(editor.textContent).toBe('한ㄱ')
   })
+
+  it('flushes a pending commit before the next composition starts', async () => {
+    const r = render(<Harness initial={[p('a', '')]} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 0)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', '한')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
+    fireEvent.compositionEnd(editor, { data: '한' })
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㄱ')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한ㄱ'
+    await waitFor(() => expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한'))
+    fireEvent.compositionEnd(editor, { data: 'ㄱ' })
+    await waitFor(() => expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한ㄱ'))
+    expect(editor.textContent).toBe('한ㄱ')
+  })
 })
 
 function Harness({ initial, version = 0 }: { initial: TestBlock[]; version?: number }) {

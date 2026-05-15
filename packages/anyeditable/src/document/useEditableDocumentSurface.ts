@@ -71,18 +71,28 @@ export function useEditableDocumentSurface<TBlock>(
     return true
   }, [apply, armIgnoreNextNativeCommit])
 
+  const flushPendingComposition = useCallback((root: HTMLElement): boolean => {
+    const transaction = compositionTransaction.current
+    if (!transaction || transaction.status !== 'committing') return false
+    return commitComposition(transaction, transaction.text ?? readComposedText(root, transaction))
+  }, [commitComposition])
+
   const ensureCompositionTransaction = useCallback((root: HTMLElement): CompositionTransaction | null => {
-    if (compositionTransaction.current) return compositionTransaction.current
+    if (compositionTransaction.current) {
+      if (compositionTransaction.current.status !== 'committing') return compositionTransaction.current
+      flushPendingComposition(root)
+    }
     const range = resolveDocumentRange(root)
     if (!range) return null
     const { start } = orderedRange(range)
     const block = stateRef.current.blocks[start.blockIndex]
-    const baseText = block ? stateRef.current.adapter.getText(block, start.blockIndex) : ''
+    const blockEl = root.querySelector(`[data-doc-block-index="${start.blockIndex}"]`)
+    const baseText = blockEl?.textContent ?? (block ? stateRef.current.adapter.getText(block, start.blockIndex) : '')
     const transaction: CompositionTransaction = { status: 'composing', range, blockIndex: start.blockIndex, baseText }
     compositionTransaction.current = transaction
     reconciliationLocked.current = true
     return transaction
-  }, [])
+  }, [flushPendingComposition])
 
   const scheduleCompositionCommit = useCallback((transaction: CompositionTransaction, text?: string) => {
     if (compositionCommitTimer.current) clearTimeout(compositionCommitTimer.current)
