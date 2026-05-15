@@ -267,6 +267,51 @@
         border-color: var(--link);
         box-shadow: 0 0 0 3px rgba(9, 105, 218, .14);
       }
+      .document-surface {
+        min-height: 260px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        outline: none;
+      }
+      .document-surface:focus {
+        border-color: var(--link);
+        box-shadow: 0 0 0 3px rgba(9, 105, 218, .14);
+      }
+      .document-surface [data-doc-block-index] {
+        margin: 0 0 10px;
+        min-height: 1.55em;
+        white-space: pre-wrap;
+      }
+      .document-surface h1,
+      .document-surface h2,
+      .document-surface h3 {
+        font-size: 22px;
+        line-height: 1.25;
+      }
+      .document-surface pre {
+        padding: 10px;
+        background: var(--soft);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        white-space: pre-wrap;
+      }
+      .document-surface [data-doc-mark-kind="bold"] {
+        font-weight: 700;
+      }
+      .document-surface [data-doc-mark-kind="italic"] {
+        font-style: italic;
+      }
+      .document-surface [data-doc-mark-kind="code"] {
+        padding: 0 3px;
+        border-radius: 4px;
+        background: var(--soft);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .document-surface [data-doc-mark-kind="highlight"] {
+        background: var(--yellow);
+      }
       .composer:empty::before,
       .composer:has(> [data-block-kind="text"]:only-child:empty)::before {
         content: attr(data-placeholder);

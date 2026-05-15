@@ -13,6 +13,18 @@ export type { AtomicKind } from './composer/schema.js'
 export { useEditableSurface } from './composer/useEditableSurface.js'
 export { useEditableComposer } from './composer/useEditableComposer.js'
 export { useEphemeralCollection } from './composer/useEphemeralCollection.js'
+export { useEditableDocumentSurface } from './document/useEditableDocumentSurface.js'
+export type {
+  DocumentPosition,
+  DocumentRange,
+  EditableDocumentBlockAdapter,
+  EditableDocumentBlockKind,
+  EditableDocumentMark,
+  EditableDocumentMarkKind,
+  EditableDocumentOps,
+  UseEditableDocumentSurfaceOptions,
+  UseEditableDocumentSurfaceReturn,
+} from './document/useEditableDocumentSurface.js'
 export { resolveCaret, resolveNodeOffset } from './composer/resolveCaret.js'
 export type { DocPos } from './composer/resolveCaret.js'
 export { resolveRange } from './composer/resolveRange.js'

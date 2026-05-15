@@ -77,5 +77,12 @@ export const playground = {
         '커버 범위: IME, paste, selection, atomic chip, undo/redo, submit',
       ],
     },
+    {
+      id: 'document-surface',
+      title: '6. Block document surface',
+      paragraphs: [
+        'Obsidian-style editor core를 위한 block 문서 편집 surface입니다. 문서 block model은 host가 소유하고, surface는 contenteditable DOM, selection mapping, beforeinput operation emission만 맡습니다.',
+      ],
+    },
   ],
 } as const
