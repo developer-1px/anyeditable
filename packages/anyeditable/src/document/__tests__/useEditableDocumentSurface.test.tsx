@@ -118,6 +118,20 @@ describe('useEditableDocumentSurface', () => {
     expect(editor.textContent).toBe('한')
   })
 
+  it('keeps the composing DOM frozen across a rerender after compositionend', async () => {
+    const r = render(<Harness initial={[p('a', '')]} version={0} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 0)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㅎ')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
+    fireEvent.compositionEnd(editor, { data: '' })
+    r.rerender(<Harness initial={[p('a', '')]} version={1} />)
+    expect(editor.textContent).toBe('한')
+    await waitFor(() => expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한'))
+    expect(editor.textContent).toBe('한')
+  })
+
   it('commits from the first final input event when compositionend has no data', () => {
     const r = render(<Harness initial={[p('a', '')]} />)
     const editor = r.getByTestId('editor')
@@ -133,7 +147,7 @@ describe('useEditableDocumentSurface', () => {
   })
 })
 
-function Harness({ initial }: { initial: TestBlock[] }) {
+function Harness({ initial, version = 0 }: { initial: TestBlock[]; version?: number }) {
   const [blocks, setBlocks] = useState(initial)
   const surface = useEditableDocumentSurface({
     blocks,
@@ -142,7 +156,7 @@ function Harness({ initial }: { initial: TestBlock[] }) {
     label: 'Document',
   })
   return (
-    <div>
+    <div data-version={version}>
       <div data-testid="editor" ref={surface.containerRef} {...surface.containerProps} />
       <pre data-testid="state">{JSON.stringify({ blocks })}</pre>
     </div>

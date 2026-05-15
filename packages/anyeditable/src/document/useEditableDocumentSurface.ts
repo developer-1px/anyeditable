@@ -26,10 +26,11 @@ export function useEditableDocumentSurface<TBlock>(
   const { blocks, adapter, ops, readOnly = false, placeholder, label, labelledBy, spellCheck } = options
   const elRef = useRef<HTMLElement | null>(null)
   const [el, setEl] = useState<HTMLElement | null>(null)
-  const composing = useRef(false)
-  const compositionRange = useRef<DocumentRange | null>(null)
-  const pendingCompositionCommit = useRef<{ range: DocumentRange; text?: string } | null>(null)
+  const nativeComposing = useRef(false)
+  const reconciliationLocked = useRef(false)
+  const compositionTransaction = useRef<CompositionTransaction | null>(null)
   const compositionCommitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const ignoreNextNativeCommitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ignoreNextNativeCommit = useRef<string | null>(null)
   const pendingSelection = useRef<DocumentPosition | null>(null)
   const stateRef = useRef({ blocks, adapter, ops, readOnly })
@@ -39,7 +40,7 @@ export function useEditableDocumentSurface<TBlock>(
     elRef.current = nextEl
     setEl(nextEl)
   }, [])
-  useDocumentReconciler(elRef, blocks, adapter, pendingSelection, composing)
+  useDocumentReconciler(elRef, blocks, adapter, pendingSelection, reconciliationLocked)
 
   const apply = useCallback((result: { patches: JsonPatchOperation[]; caret: DocumentPosition }) => {
     if (result.patches.length === 0) return
@@ -47,28 +48,51 @@ export function useEditableDocumentSurface<TBlock>(
     stateRef.current.ops.apply(result.patches)
   }, [])
 
-  const commitComposition = useCallback((range: DocumentRange, text: string) => {
+  const armIgnoreNextNativeCommit = useCallback((text: string) => {
+    ignoreNextNativeCommit.current = text
+    if (ignoreNextNativeCommitTimer.current) clearTimeout(ignoreNextNativeCommitTimer.current)
+    ignoreNextNativeCommitTimer.current = setTimeout(() => {
+      ignoreNextNativeCommit.current = null
+      ignoreNextNativeCommitTimer.current = null
+    }, 50)
+  }, [])
+
+  const commitComposition = useCallback((transaction: CompositionTransaction, text: string) => {
     if (!text) return false
     if (compositionCommitTimer.current) {
       clearTimeout(compositionCommitTimer.current)
       compositionCommitTimer.current = null
     }
-    ignoreNextNativeCommit.current = text
-    pendingCompositionCommit.current = null
-    apply(replaceRangeTextOps(stateRef.current.blocks, stateRef.current.adapter, range, text))
+    armIgnoreNextNativeCommit(text)
+    compositionTransaction.current = null
+    nativeComposing.current = false
+    reconciliationLocked.current = false
+    apply(replaceRangeTextOps(stateRef.current.blocks, stateRef.current.adapter, transaction.range, text))
     return true
-  }, [apply])
+  }, [apply, armIgnoreNextNativeCommit])
 
-  const scheduleCompositionCommit = useCallback((range: DocumentRange, text?: string) => {
+  const ensureCompositionTransaction = useCallback((root: HTMLElement): CompositionTransaction | null => {
+    if (compositionTransaction.current) return compositionTransaction.current
+    const range = resolveDocumentRange(root)
+    if (!range) return null
+    const { start } = orderedRange(range)
+    const transaction: CompositionTransaction = { status: 'composing', range, blockIndex: start.blockIndex }
+    compositionTransaction.current = transaction
+    reconciliationLocked.current = true
+    return transaction
+  }, [])
+
+  const scheduleCompositionCommit = useCallback((transaction: CompositionTransaction, text?: string) => {
     if (compositionCommitTimer.current) clearTimeout(compositionCommitTimer.current)
-    pendingCompositionCommit.current = text ? { range, text } : { range }
+    transaction.status = 'committing'
+    if (text) transaction.text = text
     compositionCommitTimer.current = setTimeout(() => {
       compositionCommitTimer.current = null
-      const pending = pendingCompositionCommit.current
+      const pending = compositionTransaction.current
       const root = elRef.current
       if (!pending || !root) return
       const fallbackText = pending.text ?? readComposedText(root, pending.range, stateRef.current)
-      commitComposition(pending.range, fallbackText)
+      commitComposition(pending, fallbackText)
     }, 0)
   }, [commitComposition])
 
@@ -80,11 +104,17 @@ export function useEditableDocumentSurface<TBlock>(
     const range = resolveDocumentRange(root)
     if (!range) return
     const { start } = orderedRange(range)
-    if (composing.current) return
+    if (nativeComposing.current || e.isComposing) {
+      if (e.inputType === 'insertCompositionText') {
+        ensureCompositionTransaction(root)
+      }
+      return
+    }
     if (e.inputType === 'insertCompositionText') {
-      if (pendingCompositionCommit.current) {
+      const transaction = compositionTransaction.current
+      if (transaction?.status === 'committing') {
         e.preventDefault()
-        commitComposition(pendingCompositionCommit.current.range, e.data ?? pendingCompositionCommit.current.text ?? '')
+        commitComposition(transaction, e.data ?? transaction.text ?? readComposedText(root, transaction.range, stateRef.current))
         return
       }
       if (ignoreNextNativeCommit.current && ignoreNextNativeCommit.current === (e.data ?? '')) {
@@ -94,9 +124,10 @@ export function useEditableDocumentSurface<TBlock>(
       return
     }
     if (e.inputType === 'insertText') {
-      if (pendingCompositionCommit.current) {
+      const transaction = compositionTransaction.current
+      if (transaction?.status === 'committing') {
         e.preventDefault()
-        commitComposition(pendingCompositionCommit.current.range, e.data ?? pendingCompositionCommit.current.text ?? '')
+        commitComposition(transaction, e.data ?? transaction.text ?? readComposedText(root, transaction.range, stateRef.current))
         return
       }
       if (ignoreNextNativeCommit.current && ignoreNextNativeCommit.current === (e.data ?? '')) {
@@ -121,7 +152,17 @@ export function useEditableDocumentSurface<TBlock>(
       e.preventDefault()
       apply(pasteTextOps(state.blocks, state.adapter, start, text))
     }
-  }, [apply, commitComposition])
+  }, [apply, commitComposition, ensureCompositionTransaction])
+
+  const handleInput = useCallback((event: Event) => {
+    const e = event as InputEvent
+    const root = elRef.current
+    const transaction = compositionTransaction.current
+    if (!root || !transaction) return
+    if (e.inputType !== 'insertCompositionText' && e.inputType !== 'insertText') return
+    const text = e.data ?? readComposedText(root, transaction.range, stateRef.current)
+    if (transaction.status === 'committing') scheduleCompositionCommit(transaction, text)
+  }, [scheduleCompositionCommit])
 
   const handlePaste = useCallback((e: ClipboardEvent) => {
     const root = elRef.current
@@ -134,20 +175,19 @@ export function useEditableDocumentSurface<TBlock>(
   }, [apply])
 
   const handleCompositionEnd = useCallback((e: CompositionEvent) => {
-    composing.current = false
+    nativeComposing.current = false
     const root = elRef.current
     const state = stateRef.current
-    const range = compositionRange.current
-    compositionRange.current = null
-    if (!root || state.readOnly || !range) return
-    scheduleCompositionCommit(range, e.data || undefined)
-  }, [scheduleCompositionCommit])
+    const transaction = root ? ensureCompositionTransaction(root) : compositionTransaction.current
+    if (!root || state.readOnly || !transaction) return
+    scheduleCompositionCommit(transaction, e.data || undefined)
+  }, [ensureCompositionTransaction, scheduleCompositionCommit])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
     const root = elRef.current
     const state = stateRef.current
     if (!root || state.readOnly) return
-    const key = toKeyInput(e, { isComposing: composing.current })
+    const key = toKeyInput(e, { isComposing: nativeComposing.current || reconciliationLocked.current })
     if (!isImeSafe(key)) return
     if (matches(key, 'Control+b Meta+b Control+B Meta+B')) {
       const range = resolveDocumentRange(root)
@@ -162,15 +202,17 @@ export function useEditableDocumentSurface<TBlock>(
   useLayoutEffect(() => {
     if (!el) return
     const onCompositionStart = () => {
-      composing.current = true
-      compositionRange.current = resolveDocumentRange(el)
+      nativeComposing.current = true
+      ensureCompositionTransaction(el)
     }
     el.addEventListener('beforeinput', handleBeforeInput)
+    el.addEventListener('input', handleInput)
     el.addEventListener('paste', handlePaste)
     el.addEventListener('compositionstart', onCompositionStart)
     el.addEventListener('compositionend', handleCompositionEnd)
     return () => {
       el.removeEventListener('beforeinput', handleBeforeInput)
+      el.removeEventListener('input', handleInput)
       el.removeEventListener('paste', handlePaste)
       el.removeEventListener('compositionstart', onCompositionStart)
       el.removeEventListener('compositionend', handleCompositionEnd)
@@ -178,8 +220,12 @@ export function useEditableDocumentSurface<TBlock>(
         clearTimeout(compositionCommitTimer.current)
         compositionCommitTimer.current = null
       }
+      if (ignoreNextNativeCommitTimer.current) {
+        clearTimeout(ignoreNextNativeCommitTimer.current)
+        ignoreNextNativeCommitTimer.current = null
+      }
     }
-  }, [el, handleBeforeInput, handleCompositionEnd, handlePaste])
+  }, [el, ensureCompositionTransaction, handleBeforeInput, handleCompositionEnd, handleInput, handlePaste])
 
   const containerProps = useMemo(() => ({
     role: 'textbox',
@@ -217,6 +263,13 @@ export type {
   UseEditableDocumentSurfaceOptions,
   UseEditableDocumentSurfaceReturn,
 } from './types.js'
+
+interface CompositionTransaction {
+  status: 'composing' | 'committing'
+  range: DocumentRange
+  blockIndex: number
+  text?: string
+}
 
 function readComposedText<TBlock>(
   root: HTMLElement,
