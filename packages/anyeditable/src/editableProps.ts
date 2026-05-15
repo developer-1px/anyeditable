@@ -1,5 +1,7 @@
 import type { KeyboardEvent, RefCallback } from 'react'
+import { isImeSafe, matches } from '@interactive-os/keyboard'
 import type { InputProps, SelectProps, NavDir } from './editableTypes.js'
+import { toKeyInput } from './keyboardInput.js'
 
 type EditableEl = HTMLInputElement | HTMLTextAreaElement
 type SelectEl = HTMLSelectElement
@@ -9,17 +11,17 @@ type SelectEl = HTMLSelectElement
  * is the legacy fallback for older Safari.
  */
 export const isComposingEvent = (e: KeyboardEvent): boolean => {
-  const ne = e.nativeEvent as KeyboardEventInit & { isComposing?: boolean; keyCode?: number }
-  return ne.isComposing === true || ne.keyCode === 229
+  return !isImeSafe(toKeyInput(e))
 }
 
 export const defaultCommitKeyMap = (e: KeyboardEvent): NavDir | 'commit-stay' | null => {
-  if (e.key === 'Enter') {
-    if (e.altKey) return null
-    if (e.metaKey || e.ctrlKey) return 'commit-stay'
-    return e.shiftKey ? 'up' : 'down'
-  }
-  if (e.key === 'Tab') return e.shiftKey ? 'left' : 'right'
+  const key = toKeyInput(e)
+  if (matches(key, 'Alt+Enter')) return null
+  if (matches(key, 'Control+Enter Meta+Enter')) return 'commit-stay'
+  if (matches(key, 'Shift+Enter')) return 'up'
+  if (matches(key, 'Enter')) return 'down'
+  if (matches(key, 'Shift+Tab')) return 'left'
+  if (matches(key, 'Tab')) return 'right'
   return null
 }
 

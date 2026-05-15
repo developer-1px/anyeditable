@@ -41,6 +41,7 @@
     "verify": "npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
+    "@interactive-os/keyboard": ">=0.1.0",
     "react": ">=18",
     "zod": ">=4",
     "@p/aria-kernel": "*",
@@ -52,7 +53,8 @@
     "zod": { "optional": true }
   },
   "devDependencies": {
-    "@p/aria-kernel": "file:../../../ds/packages/aria-kernel",
+    "@interactive-os/keyboard": "file:../../../keyboard/packages/keyboard",
+    "@p/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^19.0.0",
     "jsdom": "^29.0.0",

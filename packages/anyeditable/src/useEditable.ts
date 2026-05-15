@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, RefCallback } from 'react'
+import { isImeSafe, isPrintable } from '@interactive-os/keyboard'
 import type { CaretMode, NavDir, UseEditableOptions } from './editableTypes.js'
-import { buildInputProps, buildSelectProps, defaultCommitKeyMap, isComposingEvent } from './editableProps.js'
+import { buildInputProps, buildSelectProps, defaultCommitKeyMap } from './editableProps.js'
+import { toKeyInput } from './keyboardInput.js'
 
 type EditableEl = HTMLInputElement | HTMLTextAreaElement
 type SelectEl = HTMLSelectElement
@@ -47,9 +49,8 @@ export function useEditable<TId>(opts: UseEditableOptions<TId>) {
   const handleTypeToEdit = useCallback(
     (e: KeyboardEvent, id: TId): boolean => {
       if (editing !== null) return false
-      if (e.ctrlKey || e.metaKey || e.altKey) return false
-      if (isComposingEvent(e)) return false
-      if (e.key.length !== 1) return false
+      const key = toKeyInput(e)
+      if (!isImeSafe(key) || !isPrintable(key)) return false
       e.preventDefault()
       startEdit(id, e.key)
       return true
