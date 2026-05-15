@@ -1,5 +1,6 @@
 import type { JsonPatchOperation } from 'zod-crud'
 import type {
+  DocumentRange,
   DocumentPosition,
   EditableDocumentBlockAdapter,
   EditableDocumentMark,
@@ -17,6 +18,23 @@ export function insertTextOps<TBlock>(
   return {
     patches: [{ op: 'replace', path: textPath(adapter, position.blockIndex), value: next }],
     caret: { blockIndex: position.blockIndex, offset: position.offset + text.length },
+  }
+}
+
+export function replaceRangeTextOps<TBlock>(
+  blocks: readonly TBlock[],
+  adapter: EditableDocumentBlockAdapter<TBlock>,
+  range: DocumentRange,
+  text: string,
+): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+  const start = before(range.anchor, range.focus) ? range.anchor : range.focus
+  const end = before(range.anchor, range.focus) ? range.focus : range.anchor
+  if (start.blockIndex !== end.blockIndex) return insertTextOps(blocks, adapter, start, text)
+  const current = adapter.getText(blocks[start.blockIndex]!, start.blockIndex)
+  const next = current.slice(0, start.offset) + text + current.slice(end.offset)
+  return {
+    patches: [{ op: 'replace', path: textPath(adapter, start.blockIndex), value: next }],
+    caret: { blockIndex: start.blockIndex, offset: start.offset + text.length },
   }
 }
 
@@ -148,3 +166,6 @@ function marksPath<TBlock>(adapter: EditableDocumentBlockAdapter<TBlock>, index:
   return adapter.marksPath?.(index) ?? `/blocks/${index}/marks`
 }
 
+function before(a: DocumentPosition, b: DocumentPosition): boolean {
+  return a.blockIndex < b.blockIndex || (a.blockIndex === b.blockIndex && a.offset <= b.offset)
+}

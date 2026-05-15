@@ -43,11 +43,21 @@ test('Enter splits and Backspace at start merges blocks', async ({ page }) => {
 
 test('Korean composition commits through operation surface', async ({ page }) => {
   await setCaret(page, 0, 0)
-  await page.locator(ROOT).evaluate((root) => {
+  const prevented = await page.locator(ROOT).evaluate((root) => {
+    const block = root.querySelector('[data-doc-block-index="0"]')!
     root.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }))
-    root.dispatchEvent(new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertCompositionText', data: 'ㅎ' }))
+    const composingInput = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertCompositionText', data: 'ㅎ' })
+    root.dispatchEvent(composingInput)
+    block.textContent = '한'
     root.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '한' }))
+    const finalInput = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertText', data: '한' })
+    root.dispatchEvent(finalInput)
+    return {
+      composing: composingInput.defaultPrevented,
+      final: finalInput.defaultPrevented,
+    }
   })
+  expect(prevented).toEqual({ composing: false, final: true })
   await expectBlockText(page, 0, '한')
   await expect(page.locator(`${ROOT} [data-doc-block-index="0"]`)).toHaveText('한')
 })

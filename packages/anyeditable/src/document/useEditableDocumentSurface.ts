@@ -12,6 +12,7 @@ import {
   deleteForwardOps,
   insertTextOps,
   pasteTextOps,
+  replaceRangeTextOps,
   splitBlockOps,
   toggleMarkOps,
 } from './operations.js'
@@ -25,6 +26,8 @@ export function useEditableDocumentSurface<TBlock>(
   const elRef = useRef<HTMLElement | null>(null)
   const [el, setEl] = useState<HTMLElement | null>(null)
   const composing = useRef(false)
+  const compositionRange = useRef<ReturnType<typeof resolveDocumentRange> | null>(null)
+  const ignoreNextInsertText = useRef<string | null>(null)
   const pendingSelection = useRef<DocumentPosition | null>(null)
   const stateRef = useRef({ blocks, adapter, ops, readOnly })
   Object.assign(stateRef.current, { blocks, adapter, ops, readOnly })
@@ -49,8 +52,14 @@ export function useEditableDocumentSurface<TBlock>(
     const range = resolveDocumentRange(root)
     if (!range) return
     const { start } = orderedRange(range)
-    if (e.inputType === 'insertCompositionText') { e.preventDefault(); return }
+    if (composing.current || e.inputType === 'insertCompositionText') return
     if (e.inputType === 'insertText') {
+      if (ignoreNextInsertText.current && ignoreNextInsertText.current === (e.data ?? '')) {
+        ignoreNextInsertText.current = null
+        e.preventDefault()
+        return
+      }
+      ignoreNextInsertText.current = null
       e.preventDefault()
       apply(insertTextOps(state.blocks, state.adapter, start, e.data ?? ''))
     } else if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
@@ -84,9 +93,11 @@ export function useEditableDocumentSurface<TBlock>(
     const root = elRef.current
     const state = stateRef.current
     if (!root || state.readOnly || !e.data) return
-    const range = resolveDocumentRange(root)
+    const range = compositionRange.current
+    compositionRange.current = null
     if (!range) return
-    apply(insertTextOps(state.blocks, state.adapter, orderedRange(range).start, e.data))
+    ignoreNextInsertText.current = e.data
+    apply(replaceRangeTextOps(state.blocks, state.adapter, range, e.data))
   }, [apply])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
@@ -107,7 +118,10 @@ export function useEditableDocumentSurface<TBlock>(
 
   useLayoutEffect(() => {
     if (!el) return
-    const onCompositionStart = () => { composing.current = true }
+    const onCompositionStart = () => {
+      composing.current = true
+      compositionRange.current = resolveDocumentRange(el)
+    }
     el.addEventListener('beforeinput', handleBeforeInput)
     el.addEventListener('paste', handlePaste)
     el.addEventListener('compositionstart', onCompositionStart)

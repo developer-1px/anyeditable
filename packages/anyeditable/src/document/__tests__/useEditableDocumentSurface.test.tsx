@@ -69,9 +69,25 @@ describe('useEditableDocumentSurface', () => {
     const editor = r.getByTestId('editor')
     placeCaret(editor, 0, 0)
     fireEvent.compositionStart(editor)
-    beforeInput(editor, 'insertCompositionText', 'ㅎ')
-    expect(editor.textContent).toBe('')
+    const composingInput = beforeInput(editor, 'insertCompositionText', 'ㅎ')
+    expect(composingInput.defaultPrevented).toBe(false)
+    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
     fireEvent.compositionEnd(editor, { data: '한' })
+    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
+    expect(editor.textContent).toBe('한')
+  })
+
+  it('does not duplicate the final IME insertText event after compositionend', () => {
+    const r = render(<Harness initial={[p('a', '')]} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 0)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㅎ')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
+    fireEvent.compositionEnd(editor, { data: '한' })
+    const finalInsert = beforeInput(editor, 'insertText', '한')
+    expect(finalInsert.defaultPrevented).toBe(true)
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
     expect(editor.textContent).toBe('한')
   })
@@ -97,11 +113,12 @@ function p(id: string, text: string): TestBlock {
   return { id, kind: 'paragraph', text, marks: [] }
 }
 
-function beforeInput(el: Element, inputType: string, data?: string) {
+function beforeInput(el: Element, inputType: string, data?: string): Event {
   const event = new Event('beforeinput', { bubbles: true, cancelable: true })
   Object.defineProperty(event, 'inputType', { value: inputType })
   Object.defineProperty(event, 'data', { value: data ?? null })
   fireEvent(el, event)
+  return event
 }
 
 function placeCaret(root: Element, blockIndex: number, offset: number) {
@@ -138,4 +155,3 @@ function applyPatches(blocks: TestBlock[], patches: readonly { op: string; path:
   }
   return next.map((block, index) => ({ ...block, id: block.id === 'new' ? `new-${index}` : block.id }))
 }
-
