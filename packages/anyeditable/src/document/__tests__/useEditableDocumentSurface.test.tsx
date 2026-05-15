@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { useEditableDocumentSurface, type EditableDocumentBlockAdapter, type EditableDocumentMark } from '../useEditableDocumentSurface.js'
 
@@ -64,7 +64,7 @@ describe('useEditableDocumentSurface', () => {
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].marks).toEqual([{ kind: 'bold', from: 0, to: 5 }])
   })
 
-  it('compositionend inserts Korean text through operations', () => {
+  it('compositionend inserts Korean text through operations', async () => {
     const r = render(<Harness initial={[p('a', '')]} />)
     const editor = r.getByTestId('editor')
     placeCaret(editor, 0, 0)
@@ -74,7 +74,7 @@ describe('useEditableDocumentSurface', () => {
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('')
     editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
     fireEvent.compositionEnd(editor, { data: '한' })
-    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
+    await waitFor(() => expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한'))
     expect(editor.textContent).toBe('한')
   })
 
@@ -103,6 +103,18 @@ describe('useEditableDocumentSurface', () => {
     const finalInsert = beforeInput(editor, 'insertCompositionText', '한')
     expect(finalInsert.defaultPrevented).toBe(true)
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
+    expect(editor.textContent).toBe('한')
+  })
+
+  it('commits from native DOM after compositionend when no final input event arrives', async () => {
+    const r = render(<Harness initial={[p('a', '')]} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 0)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㅎ')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
+    fireEvent.compositionEnd(editor, { data: '' })
+    await waitFor(() => expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한'))
     expect(editor.textContent).toBe('한')
   })
 

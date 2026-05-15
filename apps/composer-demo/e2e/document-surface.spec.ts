@@ -81,6 +81,22 @@ test('Korean composition handles alternate final event ordering', async ({ page 
   await expect(page.locator(`${ROOT} [data-doc-block-index="0"]`)).toHaveText('한')
 })
 
+test('Korean composition can commit from native DOM after compositionend', async ({ page }) => {
+  await setCaret(page, 0, 0)
+  const prevented = await page.locator(ROOT).evaluate((root) => {
+    const block = root.querySelector('[data-doc-block-index="0"]')!
+    root.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }))
+    const composingInput = new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertCompositionText', data: 'ㅎ' })
+    root.dispatchEvent(composingInput)
+    block.textContent = '한'
+    root.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '' }))
+    return { composing: composingInput.defaultPrevented }
+  })
+  expect(prevented).toEqual({ composing: false })
+  await expectBlockText(page, 0, '한')
+  await expect(page.locator(`${ROOT} [data-doc-block-index="0"]`)).toHaveText('한')
+})
+
 async function readBlocks(page: Page): Promise<Array<{ text: string; marks?: unknown[] }>> {
   const raw = await page.locator(STATE).textContent()
   return JSON.parse(raw || '{}').blocks
