@@ -12,7 +12,8 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@p/aria-kernel": "*",
+    "@interactive-os/document": "file:../../../keyboard/packages/document",
+    "@p/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
     "@p/anyeditable": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
