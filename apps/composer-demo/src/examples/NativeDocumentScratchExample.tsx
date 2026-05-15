@@ -2,9 +2,11 @@ import { startTransition, useCallback, useLayoutEffect, useRef, useState } from 
 
 interface ScratchBlock {
   id: string
-  kind: 'paragraph' | 'heading'
+  kind: ScratchBlockKind
   text: string
 }
+
+type ScratchBlockKind = 'paragraph' | 'heading' | 'list' | 'quote' | 'code'
 
 const INITIAL_BLOCKS: ScratchBlock[] = [
   { id: 's1', kind: 'paragraph', text: '' },
@@ -73,6 +75,18 @@ export function NativeDocumentScratchExample() {
       const native = event as InputEvent
       pushTrace('scratch.beforeinput', native)
       if (native.isComposing || native.inputType === 'insertCompositionText') return
+      if (native.inputType === 'insertText' && native.data === ' ' && applyMarkdownShortcut(root)) {
+        native.preventDefault()
+        syncStateFromDom()
+        pushTrace('markdown.shortcut', native)
+        return
+      }
+      if (native.inputType === 'insertFromPaste' && applyMarkdownPaste(root, native)) {
+        native.preventDefault()
+        syncStateFromDom()
+        pushTrace('markdown.paste', native)
+        return
+      }
       if (native.inputType === 'insertParagraph') {
         native.preventDefault()
         splitCurrentBlock(root)
@@ -143,7 +157,7 @@ export function NativeDocumentScratchExample() {
           onCompositionEnd={event => pushTrace('scratch.compositionend', event.nativeEvent)}
           onKeyDown={handleKeyDown}
         />
-        <p className="hint">IME와 일반 입력은 native DOM을 먼저 믿고, input 이벤트에서 state가 따라옵니다. Enter/Backspace 구조 변경만 직접 처리합니다.</p>
+        <p className="hint">IME와 일반 입력은 native DOM을 먼저 믿고, input 이벤트에서 state가 따라옵니다. 예제 레이어는 #, -, &gt;, ``` + Space와 plain markdown paste만 처리합니다.</p>
       </div>
       <div className="observe">
         <h3>관찰</h3>
@@ -175,7 +189,7 @@ function renderBlocks(root: HTMLElement, blocks: ScratchBlock[]) {
 }
 
 function createBlockElement(document: Document, block: ScratchBlock, index: number): HTMLElement {
-  const el = document.createElement(block.kind === 'heading' ? 'h2' : 'p')
+  const el = document.createElement(tagNameForKind(block.kind))
   el.dataset.scratchBlockIndex = String(index)
   el.dataset.scratchBlockId = block.id
   el.dataset.scratchBlockKind = block.kind
@@ -187,7 +201,7 @@ function readBlocksFromDom(root: HTMLElement | null): ScratchBlock[] {
   if (!root) return []
   return Array.from(root.querySelectorAll<HTMLElement>('[data-scratch-block-index]')).map((el, index) => ({
     id: el.dataset.scratchBlockId || `scratch-${index}`,
-    kind: el.dataset.scratchBlockKind === 'heading' ? 'heading' : 'paragraph',
+    kind: parseBlockKind(el.dataset.scratchBlockKind),
     text: el.textContent ?? '',
   }))
 }
@@ -202,10 +216,65 @@ function splitCurrentBlock(root: HTMLElement | null) {
   setBlockText(block, before)
   const next = createBlockElement(root.ownerDocument, {
     id: crypto.randomUUID(),
-    kind: 'paragraph',
+    kind: block.dataset.scratchBlockKind === 'code' ? 'code' : 'paragraph',
     text: after,
   }, Number(block.dataset.scratchBlockIndex ?? 0) + 1)
   block.after(next)
+  renumberBlocks(root)
+  restoreCaret(next, 0)
+}
+
+function applyMarkdownShortcut(root: HTMLElement): boolean {
+  const point = getSelectionPoint(root)
+  if (!root || !point) return false
+  const beforeCaret = (point.block.textContent ?? '').slice(0, point.offset)
+  const kind = markdownShortcutKind(beforeCaret)
+  if (!kind) return false
+  replaceBlockElement(root, point.block, kind, '')
+  return true
+}
+
+function applyMarkdownPaste(root: HTMLElement, event: InputEvent): boolean {
+  const text = event.dataTransfer?.getData('text/plain') ?? ''
+  if (!text.includes('\n') && !markdownLineToBlock(text)) return false
+  const point = getSelectionPoint(root)
+  if (!root || !point) return false
+  const blocks = text.split(/\r?\n/).map(markdownLineToBlock).filter((block): block is Omit<ScratchBlock, 'id'> => Boolean(block))
+  if (blocks.length === 0) return false
+  const elements = blocks.map((block, offset) => createBlockElement(root.ownerDocument, {
+    id: crypto.randomUUID(),
+    ...block,
+  }, Number(point.block.dataset.scratchBlockIndex ?? 0) + offset))
+  point.block.replaceWith(...elements)
+  renumberBlocks(root)
+  restoreCaret(elements[elements.length - 1]!, elements[elements.length - 1]!.textContent?.length ?? 0)
+  return true
+}
+
+function markdownShortcutKind(text: string): ScratchBlockKind | null {
+  if (text === '#') return 'heading'
+  if (text === '-') return 'list'
+  if (text === '>') return 'quote'
+  if (text === '```') return 'code'
+  return null
+}
+
+function markdownLineToBlock(line: string): Omit<ScratchBlock, 'id'> | null {
+  if (line.startsWith('# ')) return { kind: 'heading', text: line.slice(2) }
+  if (line.startsWith('- ')) return { kind: 'list', text: line.slice(2) }
+  if (line.startsWith('> ')) return { kind: 'quote', text: line.slice(2) }
+  if (line.startsWith('```')) return { kind: 'code', text: line.slice(3) }
+  return { kind: 'paragraph', text: line }
+}
+
+function replaceBlockElement(root: HTMLElement, block: HTMLElement, kind: ScratchBlockKind, text: string) {
+  const index = Number(block.dataset.scratchBlockIndex ?? 0)
+  const next = createBlockElement(root.ownerDocument, {
+    id: block.dataset.scratchBlockId || crypto.randomUUID(),
+    kind,
+    text,
+  }, index)
+  block.replaceWith(next)
   renumberBlocks(root)
   restoreCaret(next, 0)
 }
@@ -274,6 +343,18 @@ function setBlockText(block: HTMLElement, text: string) {
   const br = block.ownerDocument.createElement('br')
   br.dataset.scratchEmpty = 'true'
   block.appendChild(br)
+}
+
+function tagNameForKind(kind: ScratchBlockKind): keyof HTMLElementTagNameMap {
+  if (kind === 'heading') return 'h2'
+  if (kind === 'quote') return 'blockquote'
+  if (kind === 'code') return 'pre'
+  return 'p'
+}
+
+function parseBlockKind(kind: string | undefined): ScratchBlockKind {
+  if (kind === 'heading' || kind === 'list' || kind === 'quote' || kind === 'code') return kind
+  return 'paragraph'
 }
 
 function firstTextNode(block: HTMLElement): Text | null {

@@ -44,13 +44,56 @@ test('Korean sequential composition preserves previous syllable from native DOM'
   await expect(page.locator(`${ROOT} [data-scratch-block-index="0"]`)).toHaveText('한ㄱ')
 })
 
-async function readBlocks(page: Page): Promise<Array<{ text: string }>> {
+test('example markdown shortcuts convert block kind without touching the engine core', async ({ page }) => {
+  await setCaret(page, 0, 0)
+  await page.keyboard.type('# ')
+  await page.keyboard.type('Title')
+
+  await expectBlock(page, 0, { kind: 'heading', text: 'Title' })
+  await expect(page.locator(`${ROOT} h2[data-scratch-block-index="0"]`)).toHaveText('Title')
+
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('- ')
+  await page.keyboard.type('item')
+
+  await expectBlock(page, 1, { kind: 'list', text: 'item' })
+})
+
+test('example markdown paste imports plain markdown lines', async ({ page }) => {
+  await setCaret(page, 0, 0)
+  await page.locator(ROOT).evaluate((root) => {
+    const data = new DataTransfer()
+    data.setData('text/plain', '# Pasted title\n- first\n> note\nplain')
+    root.dispatchEvent(new InputEvent('beforeinput', {
+      bubbles: true,
+      cancelable: true,
+      inputType: 'insertFromPaste',
+      dataTransfer: data,
+    }))
+  })
+
+  await expect.poll(async () => (await readBlocks(page)).slice(0, 4).map(({ kind, text }) => [kind, text])).toEqual([
+    ['heading', 'Pasted title'],
+    ['list', 'first'],
+    ['quote', 'note'],
+    ['paragraph', 'plain'],
+  ])
+})
+
+async function readBlocks(page: Page): Promise<Array<{ kind: string; text: string }>> {
   const raw = await page.locator(STATE).textContent()
   return JSON.parse(raw || '{}').blocks
 }
 
 async function expectBlockText(page: Page, index: number, text: string) {
   await expect.poll(async () => (await readBlocks(page))[index]?.text).toBe(text)
+}
+
+async function expectBlock(page: Page, index: number, block: { kind: string; text: string }) {
+  await expect.poll(async () => {
+    const current = (await readBlocks(page))[index]
+    return current ? { kind: current.kind, text: current.text } : null
+  }).toEqual(block)
 }
 
 async function setCaret(page: Page, blockIndex: number, offset: number) {
