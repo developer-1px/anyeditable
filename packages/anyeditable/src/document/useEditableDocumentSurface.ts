@@ -13,7 +13,7 @@ import {
   deleteForwardOps,
   insertTextOps,
   pasteTextOps,
-  replaceRangeTextOps,
+  replaceRangeTextFromSnapshotOps,
   splitBlockOps,
   toggleMarkOps,
 } from './operations.js'
@@ -67,7 +67,7 @@ export function useEditableDocumentSurface<TBlock>(
     compositionTransaction.current = null
     nativeComposing.current = false
     reconciliationLocked.current = false
-    apply(replaceRangeTextOps(stateRef.current.blocks, stateRef.current.adapter, transaction.range, text))
+    apply(replaceRangeTextFromSnapshotOps(stateRef.current.adapter, transaction.range, transaction.baseText, text))
     return true
   }, [apply, armIgnoreNextNativeCommit])
 
@@ -76,7 +76,9 @@ export function useEditableDocumentSurface<TBlock>(
     const range = resolveDocumentRange(root)
     if (!range) return null
     const { start } = orderedRange(range)
-    const transaction: CompositionTransaction = { status: 'composing', range, blockIndex: start.blockIndex }
+    const block = stateRef.current.blocks[start.blockIndex]
+    const baseText = block ? stateRef.current.adapter.getText(block, start.blockIndex) : ''
+    const transaction: CompositionTransaction = { status: 'composing', range, blockIndex: start.blockIndex, baseText }
     compositionTransaction.current = transaction
     reconciliationLocked.current = true
     return transaction
@@ -91,7 +93,7 @@ export function useEditableDocumentSurface<TBlock>(
       const pending = compositionTransaction.current
       const root = elRef.current
       if (!pending || !root) return
-      const fallbackText = pending.text ?? readComposedText(root, pending.range, stateRef.current)
+      const fallbackText = pending.text ?? readComposedText(root, pending)
       commitComposition(pending, fallbackText)
     }, 0)
   }, [commitComposition])
@@ -114,7 +116,7 @@ export function useEditableDocumentSurface<TBlock>(
       const transaction = compositionTransaction.current
       if (transaction?.status === 'committing') {
         e.preventDefault()
-        commitComposition(transaction, e.data ?? transaction.text ?? readComposedText(root, transaction.range, stateRef.current))
+        commitComposition(transaction, e.data ?? transaction.text ?? readComposedText(root, transaction))
         return
       }
       if (ignoreNextNativeCommit.current && ignoreNextNativeCommit.current === (e.data ?? '')) {
@@ -127,7 +129,7 @@ export function useEditableDocumentSurface<TBlock>(
       const transaction = compositionTransaction.current
       if (transaction?.status === 'committing') {
         e.preventDefault()
-        commitComposition(transaction, e.data ?? transaction.text ?? readComposedText(root, transaction.range, stateRef.current))
+        commitComposition(transaction, e.data ?? transaction.text ?? readComposedText(root, transaction))
         return
       }
       if (ignoreNextNativeCommit.current && ignoreNextNativeCommit.current === (e.data ?? '')) {
@@ -160,7 +162,7 @@ export function useEditableDocumentSurface<TBlock>(
     const transaction = compositionTransaction.current
     if (!root || !transaction) return
     if (e.inputType !== 'insertCompositionText' && e.inputType !== 'insertText') return
-    const text = e.data ?? readComposedText(root, transaction.range, stateRef.current)
+    const text = e.data ?? readComposedText(root, transaction)
     if (transaction.status === 'committing') scheduleCompositionCommit(transaction, text)
   }, [scheduleCompositionCommit])
 
@@ -268,27 +270,23 @@ interface CompositionTransaction {
   status: 'composing' | 'committing'
   range: DocumentRange
   blockIndex: number
+  baseText: string
   text?: string
 }
 
-function readComposedText<TBlock>(
+function readComposedText(
   root: HTMLElement,
-  range: DocumentRange,
-  state: {
-    blocks: readonly TBlock[]
-    adapter: UseEditableDocumentSurfaceOptions<TBlock>['adapter']
-  },
+  transaction: CompositionTransaction,
 ): string {
+  const { range, baseText } = transaction
   const start = orderedRange(range).start
   const end = orderedRange(range).end
   if (start.blockIndex !== end.blockIndex) return ''
-  const block = state.blocks[start.blockIndex]
   const el = root.querySelector(`[data-doc-block-index="${start.blockIndex}"]`)
-  if (!block || !el) return ''
-  const oldText = state.adapter.getText(block, start.blockIndex)
+  if (!el) return ''
   const domText = el.textContent ?? ''
-  const prefix = oldText.slice(0, start.offset)
-  const suffix = oldText.slice(end.offset)
+  const prefix = baseText.slice(0, start.offset)
+  const suffix = baseText.slice(end.offset)
   if (!domText.startsWith(prefix) || !domText.endsWith(suffix)) return ''
   return domText.slice(prefix.length, domText.length - suffix.length)
 }

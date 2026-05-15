@@ -145,6 +145,20 @@ describe('useEditableDocumentSurface', () => {
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
     expect(editor.textContent).toBe('한')
   })
+
+  it('commits composition against the start snapshot when host state changes before commit', async () => {
+    const applied: Array<readonly { op: string; path: string; value?: unknown }[]> = []
+    const r = render(<ControlledHarness blocks={[p('a', '한')]} onApply={patches => applied.push(patches)} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 1)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㄱ')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한ㄱ'
+    fireEvent.compositionEnd(editor, { data: '' })
+    r.rerender(<ControlledHarness blocks={[p('a', '')]} onApply={patches => applied.push(patches)} />)
+    await waitFor(() => expect(applied.at(-1)?.[0]?.value).toBe('한ㄱ'))
+    expect(editor.textContent).toBe('한ㄱ')
+  })
 })
 
 function Harness({ initial, version = 0 }: { initial: TestBlock[]; version?: number }) {
@@ -159,6 +173,26 @@ function Harness({ initial, version = 0 }: { initial: TestBlock[]; version?: num
     <div data-version={version}>
       <div data-testid="editor" ref={surface.containerRef} {...surface.containerProps} />
       <pre data-testid="state">{JSON.stringify({ blocks })}</pre>
+    </div>
+  )
+}
+
+function ControlledHarness({
+  blocks,
+  onApply,
+}: {
+  blocks: TestBlock[]
+  onApply: (patches: readonly { op: string; path: string; value?: unknown }[]) => void
+}) {
+  const surface = useEditableDocumentSurface({
+    blocks,
+    adapter,
+    ops: { apply: onApply },
+    label: 'Document',
+  })
+  return (
+    <div>
+      <div data-testid="editor" ref={surface.containerRef} {...surface.containerProps} />
     </div>
   )
 }

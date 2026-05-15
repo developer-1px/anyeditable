@@ -97,6 +97,28 @@ test('Korean composition can commit from native DOM after compositionend', async
   await expect(page.locator(`${ROOT} [data-doc-block-index="0"]`)).toHaveText('한')
 })
 
+test('Korean sequential composition preserves the previous syllable', async ({ page }) => {
+  await setCaret(page, 0, 0)
+  await page.locator(ROOT).evaluate((root) => {
+    const block = root.querySelector('[data-doc-block-index="0"]')!
+    root.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }))
+    root.dispatchEvent(new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertCompositionText', data: 'ㅎ' }))
+    block.textContent = '한'
+    root.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '한' }))
+  })
+  await expectBlockText(page, 0, '한')
+  await setCaret(page, 0, 1)
+  await page.locator(ROOT).evaluate((root) => {
+    const block = root.querySelector('[data-doc-block-index="0"]')!
+    root.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }))
+    root.dispatchEvent(new InputEvent('beforeinput', { bubbles: true, cancelable: true, inputType: 'insertCompositionText', data: 'ㄱ' }))
+    block.textContent = '한ㄱ'
+    root.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '' }))
+  })
+  await expectBlockText(page, 0, '한ㄱ')
+  await expect(page.locator(`${ROOT} [data-doc-block-index="0"]`)).toHaveText('한ㄱ')
+})
+
 async function readBlocks(page: Page): Promise<Array<{ text: string; marks?: unknown[] }>> {
   const raw = await page.locator(STATE).textContent()
   return JSON.parse(raw || '{}').blocks

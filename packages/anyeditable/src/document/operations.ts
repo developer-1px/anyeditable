@@ -38,6 +38,21 @@ export function replaceRangeTextOps<TBlock>(
   }
 }
 
+export function replaceRangeTextFromSnapshotOps<TBlock>(
+  adapter: EditableDocumentBlockAdapter<TBlock>,
+  range: DocumentRange,
+  baseText: string,
+  text: string,
+): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+  const start = before(range.anchor, range.focus) ? range.anchor : range.focus
+  const end = before(range.anchor, range.focus) ? range.focus : range.anchor
+  const next = baseText.slice(0, start.offset) + text + baseText.slice(start.blockIndex === end.blockIndex ? end.offset : start.offset)
+  return {
+    patches: [{ op: 'replace', path: textPath(adapter, start.blockIndex), value: next }],
+    caret: { blockIndex: start.blockIndex, offset: start.offset + text.length },
+  }
+}
+
 export function splitBlockOps<TBlock>(
   blocks: readonly TBlock[],
   adapter: EditableDocumentBlockAdapter<TBlock>,
