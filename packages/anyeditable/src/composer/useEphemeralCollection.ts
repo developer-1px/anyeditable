@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { fromList, reduce, type NormalizedData, type UiEvent } from '@p/aria-kernel'
+import { fromList, reduce, type NormalizedData, type UiEvent } from '@interactive-os/aria-kernel'
 
 /**
  * F8 #135 제안 B 검증 — derived/ephemeral 데이터(매 keystroke filter 결과)를

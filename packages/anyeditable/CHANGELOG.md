@@ -19,17 +19,17 @@ optional triggers/atomic blocks.
 
 - `useEditableComposer` remains as a thin backwards-compatible alias.
 
-## 0.4.0 — Rename: `editable-lifecycle` → `@p/anyeditable`
+## 0.4.0 — Rename: `editable-lifecycle` → `@interactive-os/anyeditable`
 
-Same library, clearer name. Package now scoped under `@p` alongside
-`@p/aria-kernel`. Covers all text-editable surfaces (`<input>`, `<textarea>`,
+Same library, clearer name. Package now scoped under `@interactive-os` alongside
+`@interactive-os/aria-kernel`. Covers all text-editable surfaces (`<input>`, `<textarea>`,
 `contenteditable`) — the previous "lifecycle" framing was too abstract.
 
 ### Migration
 
 ```diff
 -import { useEditableComposer } from 'editable-lifecycle'
-+import { useEditableComposer } from '@p/anyeditable'
++import { useEditableComposer } from '@interactive-os/anyeditable'
 ```
 
 No runtime API changes.
@@ -148,7 +148,7 @@ No runtime API changes.
 
 ## 0.3.0 — Chat composer kernel (dogfood)
 
-3-패키지 가족(@p/aria-kernel + zod-crud + @p/anyeditable) 합성으로 chat composer
+3-패키지 가족(@interactive-os/aria-kernel + zod-crud + @interactive-os/anyeditable) 합성으로 chat composer
 kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Added — `useEditableComposer`
@@ -187,7 +187,7 @@ kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Peer dependencies (v0.3 만)
 
-- `@p/aria-kernel` (file path)
+- `@interactive-os/aria-kernel` (file path)
 - `zod-crud` ^0.9
 - `zod` >=4
 

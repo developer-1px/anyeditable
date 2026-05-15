@@ -3,7 +3,7 @@ import { useJsonDocument } from 'zod-crud'
 import {
   ComposerDoc, EMPTY_DOC, serialize, useEditableSurface,
   type ComposerDoc as ComposerDocType, type JsonOps,
-} from '@p/anyeditable'
+} from '@interactive-os/anyeditable'
 import { CodeBlock } from '../docs/CodeBlock.js'
 import { useTriggerCombobox } from '../useTriggerCombobox.js'
 import { COMPOSER_SNIPPET } from './snippets.js'

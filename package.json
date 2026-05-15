@@ -7,9 +7,9 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w @p/anyeditable",
-    "test": "npm test -w @p/anyeditable",
-    "typecheck": "npm run typecheck -w @p/anyeditable",
+    "build": "npm run build -w @interactive-os/anyeditable",
+    "test": "npm test -w @interactive-os/anyeditable",
+    "typecheck": "npm run typecheck -w @interactive-os/anyeditable",
     "verify": "npm run typecheck && npm test && npm run build",
     "dev": "npm run dev -w composer-demo",
     "demo:build": "npm run build -w composer-demo"

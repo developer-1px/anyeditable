@@ -1,9 +1,9 @@
 export const playground = ({
   header: {
     kicker: '기술 노트 / playground',
-    title: '@p/anyeditable',
+    title: '@interactive-os/anyeditable',
     description: 'React에서 직접 만든 편집 UI에 붙이는 headless editing lifecycle hook입니다. 아직 범용 editor framework가 아니라, 현재는 두 가지 편집 surface를 안정적으로 다루는 패키지입니다.',
-    install: 'npm i @p/anyeditable',
+    install: 'npm i @interactive-os/anyeditable',
   },
   apiGroups: [
     {

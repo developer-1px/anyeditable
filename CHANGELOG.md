@@ -2,7 +2,7 @@
 
 ## 0.3.0 — Chat composer kernel (dogfood)
 
-3-패키지 가족(@p/aria-kernel + zod-crud + @p/anyeditable) 합성으로 chat composer
+3-패키지 가족(@interactive-os/aria-kernel + zod-crud + @interactive-os/anyeditable) 합성으로 chat composer
 kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Added — `useEditableComposer`
@@ -41,7 +41,7 @@ kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Peer dependencies (v0.3 만)
 
-- `@p/aria-kernel` (file path)
+- `@interactive-os/aria-kernel` (file path)
 - `zod-crud` ^0.9
 - `zod` >=4
 

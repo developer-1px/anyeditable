@@ -6,7 +6,7 @@ export default defineConfig({
   },
   server: {
     deps: {
-      inline: ['@p/aria-kernel'],
+      inline: ['@interactive-os/aria-kernel'],
     },
   },
   test: {

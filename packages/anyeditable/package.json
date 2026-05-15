@@ -1,5 +1,5 @@
 {
-  "name": "@p/anyeditable",
+  "name": "@interactive-os/anyeditable",
   "version": "0.4.0",
   "description": "Headless React kernels for any text-editable surface. useEditable covers input/textarea/select inline edits; useEditableSurface covers contenteditable visual surfaces, composers, triggers, and atomic chips.",
   "type": "module",
@@ -44,17 +44,17 @@
     "@interactive-os/keyboard": ">=0.1.0",
     "react": ">=18",
     "zod": ">=4",
-    "@p/aria-kernel": "*",
+    "@interactive-os/aria-kernel": "*",
     "zod-crud": ">=0.9"
   },
   "peerDependenciesMeta": {
-    "@p/aria-kernel": { "optional": true },
+    "@interactive-os/aria-kernel": { "optional": true },
     "zod-crud": { "optional": true },
     "zod": { "optional": true }
   },
   "devDependencies": {
     "@interactive-os/keyboard": "file:../../../keyboard/packages/keyboard",
-    "@p/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
+    "@interactive-os/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^19.0.0",
     "jsdom": "^29.0.0",

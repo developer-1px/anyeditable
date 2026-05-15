@@ -1,6 +1,6 @@
 # Dogfood Findings
 
-`@p/aria-kernel` + `zod-crud` 를 chat composer 빌드에 사용하며 발견되는
+`@interactive-os/aria-kernel` + `zod-crud` 를 chat composer 빌드에 사용하며 발견되는
 어휘 부족·DX 갭·invariant 위반 후보를 누적한다.
 
 종료 조건: ≥ 1건. 0건이면 우회로 푼 신호.
@@ -83,7 +83,7 @@
 
 ## F3 · 정체성 가족 — `JsonPatchOperation` 어휘 SSOT 가 zod-crud 에 있음
 
-**상황:** @p/anyeditable kernel 이 patch 타입을 자체 정의하면 zod-crud 와 어휘 분기.
+**상황:** @interactive-os/anyeditable kernel 이 patch 타입을 자체 정의하면 zod-crud 와 어휘 분기.
 
 **현재 처리:** `composer/blockOps.ts` 안 `Patch` 를 자체 선언했으나 실제로는 `JsonPatchOperation` 과 동일 shape.
 
@@ -112,19 +112,19 @@ overload 로 `ZodObject` 를 직접 받는 시그니처 추가.
 
 **상황:** zod-crud 가 `zod ^4.0.0` peer 강제. 기존 zod v3 프로젝트가 zod-crud 채택 시 v4 마이그레이션 필요.
 
-**조치:** @p/anyeditable 도 v4 로 올림 (이번 iter). 합리적 선택 — zod v4 가 stable.
+**조치:** @interactive-os/anyeditable 도 v4 로 올림 (이번 iter). 합리적 선택 — zod v4 가 stable.
 다만 README 에 "requires zod ^4" 명시가 강하면 도움.
 
 ---
 
 ## F6 · aria-kernel — `useComboboxPattern` 가 root export 가 아니라 `/patterns` subpath
 
-**상황:** dogfood demo 작성 중 `import { useComboboxPattern } from '@p/aria-kernel'` 실패.
-`@p/aria-kernel/patterns` 로 들어가야 함.
+**상황:** dogfood demo 작성 중 `import { useComboboxPattern } from '@interactive-os/aria-kernel'` 실패.
+`@interactive-os/aria-kernel/patterns` 로 들어가야 함.
 
 **현재 회피:** subpath import.
 
-**평가:** README 에 `import { ... } from '@p/aria-kernel/axes'` 등 subpath 안내 있으나
+**평가:** README 에 `import { ... } from '@interactive-os/aria-kernel/axes'` 등 subpath 안내 있으나
 P-tier patterns 가 root re-export 안 됨이 직관 어긋남. 트리쉐이킹 의도면 명시 필요.
 
 **Issue 후보:** root index 에서 patterns 도 re-export 또는 README 에 "use subpath for patterns" 명시.
@@ -137,9 +137,9 @@ P-tier patterns 가 root re-export 안 됨이 직관 어긋남. 트리쉐이킹 
 vitest 에서 "Cannot read properties of null (reading 'useState')" — React 인스턴스 중복.
 
 **현재 회피:** `vitest.config.ts` 에 `resolve.dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime']`
-+ `server.deps.inline: ['@p/aria-kernel']`.
++ `server.deps.inline: ['@interactive-os/aria-kernel']`.
 
-**평가:** 가족 패키지 (aria-kernel + zod-crud + @p/anyeditable) 를 함께 쓰는 소비자가
+**평가:** 가족 패키지 (aria-kernel + zod-crud + @interactive-os/anyeditable) 를 함께 쓰는 소비자가
 같은 벽을 만남. README 또는 family-level integration 가이드에 dedupe 스니펫 권장.
 
 **Issue 후보:** 가족 README 또는 별도 INTEGRATION.md 에 vitest/vite 설정 스니펫 게시.
@@ -171,7 +171,7 @@ vitest 에서 "Cannot read properties of null (reading 'useState')" — React �
 
 ---
 
-## F9 · @p/anyeditable 자체 — IME compositionend → insertText ops 단발 발행 (자체 해결)
+## F9 · @interactive-os/anyeditable 자체 — IME compositionend → insertText ops 단발 발행 (자체 해결)
 
 **상황:** v0.2.0 lifecycle 은 composition 동안 ops 를 게이트만 했고 compositionend 후
 DOM ↔ model 정합 경로 부재. 한글 입력이 DOM 에는 들어가지만 zod-crud doc 에 없음 (정합 깨짐).
@@ -187,14 +187,14 @@ DOM ↔ model 정합 경로 부재. 한글 입력이 DOM 에는 들어가지만 
 
 ---
 
-## F10 · @p/anyeditable 자체 — 키스트로크 burst → 1 transaction (다음 iter 자체 해결)
+## F10 · @interactive-os/anyeditable 자체 — 키스트로크 burst → 1 transaction (다음 iter 자체 해결)
 
 **상황:** iter 8 에서 `useJsonDocument` 채택 후 undo 검증. 현재 `ops.apply(patches)` 가 매
 beforeinput 마다 호출 → zod-crud history 가 키스트로크 1개당 1 step 기록.
 "hello" 입력 후 Cmd+Z 5번 필요 — chat UX 결함.
 
 **zod-crud 측 갭 없음:** `ops.patch([...])` 는 배열을 받아 1 step 으로 기록. 즉 batching 은
-@p/anyeditable 책임.
+@interactive-os/anyeditable 책임.
 
 **제안 조치:** kernel 에 transaction batcher 추가
 - 같은 inputType (`insertText`) 의 연속 patch 를 microtask/idle 까지 누적 후 1회 발행
@@ -208,7 +208,7 @@ History merge 는 zod-crud 책임 — issue 제출.
 
 ---
 
-## F11 · @p/anyeditable 자체 — Cmd+Z / Cmd+Shift+Z 키보드 → onUndo/onRedo 콜백 (자체 해결)
+## F11 · @interactive-os/anyeditable 자체 — Cmd+Z / Cmd+Shift+Z 키보드 → onUndo/onRedo 콜백 (자체 해결)
 
 **iter 9 조치:** `useEditableComposer({ onUndo, onRedo })` 옵션 추가, rootProps.onKeyDown 에서
 `metaKey/ctrlKey + z` 감지하여 콜백 호출. demo 에서 `jd.history.undo/redo` wire.
@@ -217,7 +217,7 @@ History merge 는 zod-crud 책임 — issue 제출.
 
 ---
 
-## F12 · @p/anyeditable 자체 — DOM Selection ↔ DocPos resolver (자체 해결)
+## F12 · @interactive-os/anyeditable 자체 — DOM Selection ↔ DocPos resolver (자체 해결)
 
 **상황:** v0.2~iter 9 까지 caret 은 beforeinput 누적으로만 추적. 마우스 클릭·native arrow·
 contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
@@ -238,7 +238,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
 
 ---
 
-## F13 · @p/anyeditable 자체 — 정방향 삭제 (Delete key, `deleteContentForward`) (자체 해결)
+## F13 · @interactive-os/anyeditable 자체 — 정방향 삭제 (Delete key, `deleteContentForward`) (자체 해결)
 
 **iter 11 조치:** `deleteForwardPatch(blocks, blockIdx, offset)` 추가 + `handleBeforeInput` 의
 `deleteContentForward` 분기. 텍스트 끝에서 다음 atomic 제거, 텍스트 중간이면 next char 삭제.
@@ -247,7 +247,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
 
 ---
 
-## F14 · @p/anyeditable 자체 — Range selection delete/replace (자체 해결, 단일 text block scope)
+## F14 · @interactive-os/anyeditable 자체 — Range selection delete/replace (자체 해결, 단일 text block scope)
 
 **iter 13 조치:**
 - `resolveRange(root, sel) → { start, end, collapsed } | null` — anchor↔focus doc-order 정규화
@@ -264,7 +264,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
 
 ---
 
-## F15 · @p/anyeditable 자체 — commitAtomic 후 DOM caret 복원 (자체 해결)
+## F15 · @interactive-os/anyeditable 자체 — commitAtomic 후 DOM caret 복원 (자체 해결)
 
 **상황:** `commitAtomic` 이 model caret 을 `blockIdx+2/0` 로 갱신했지만 브라우저 DOM caret 은
 이전 위치 (split 된 첫 text block) 에 그대로. 사용자가 다음 입력 시 chip 앞에 글자 삽입됨.
@@ -280,7 +280,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
 
 ---
 
-## F16 · @p/anyeditable 자체 — Cross-block range delete (atomic 포함, 자체 해결)
+## F16 · @interactive-os/anyeditable 자체 — Cross-block range delete (atomic 포함, 자체 해결)
 
 **상황:** F14 의 단일 text block scope → multi-block (atomic span 포함) 확장.
 사용자가 `'hi @bob check'` 의 `'i ' + chip + ' c'` 를 drag-select 후 Backspace / type 시.
@@ -299,7 +299,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
 
 ---
 
-## F17 · @p/anyeditable 자체 — Shift+Enter 줄바꿈 (`insertLineBreak`/`insertParagraph`) (자체 해결)
+## F17 · @interactive-os/anyeditable 자체 — Shift+Enter 줄바꿈 (`insertLineBreak`/`insertParagraph`) (자체 해결)
 
 **상황:** Enter (no shift) → onSubmit 으로 가로채는 반면, Shift+Enter 는 native beforeinput
 `insertLineBreak` (또는 일부 브라우저 `insertParagraph`) 가 fire 되어야 했으나 우리 handler 의
@@ -316,7 +316,7 @@ else branch 가 preventDefault 만 하고 ops 미발행 → 줄바꿈 누락.
 
 ---
 
-## F18 · @p/anyeditable 자체 — root blur → trigger 자동 cancel (자체 해결)
+## F18 · @interactive-os/anyeditable 자체 — root blur → trigger 자동 cancel (자체 해결)
 
 **상황:** 사용자가 `@bob` popover 띄운 채 외부 클릭 시 popover 가 그대로 — Esc 만 cancel 가능.
 
@@ -333,7 +333,7 @@ else branch 가 preventDefault 만 하고 ops 미발행 → 줄바꿈 누락.
 
 ---
 
-## F19 · @p/anyeditable 자체 — atomic 양옆 caret 휴리스틱 정밀화 (자체 해결)
+## F19 · @interactive-os/anyeditable 자체 — atomic 양옆 caret 휴리스틱 정밀화 (자체 해결)
 
 **iter 10 의 한계:** atomic block 내부 caret 만 `compareBoundaryPoints(END_TO_START)` 로 앞/뒤 구분.
 실제 브라우저는 atomic 양옆 클릭 시 인접 text node 에 caret 을 두므로 (focusNode = text),
@@ -352,7 +352,7 @@ else branch 가 preventDefault 만 하고 ops 미발행 → 줄바꿈 누락.
 
 ---
 
-## F20 · @p/anyeditable 자체 — onKeyDown 의 `defaultPrevented` 가드 (자체 해결)
+## F20 · @interactive-os/anyeditable 자체 — onKeyDown 의 `defaultPrevented` 가드 (자체 해결)
 
 **상황:** 데모에서 `<div onKeyDown={(e) => { onKeyDown(e); c.rootProps.onKeyDown?.(e) }}>` 패턴.
 trigger active + Enter 시 combobox 가 활성화 → `commitAtomic` → `setTrigger(null)` 발사.
@@ -376,7 +376,7 @@ combobox 등 upstream handler 가 e.preventDefault() 한 후엔 우리는 처리
 ## F21 · 출하 readiness — peer 명시화 + README/CHANGELOG 패키지 동봉 (자체 해결)
 
 **iter 23 조치:**
-- `peerDependencies` 에 `@p/aria-kernel`, `zod-crud` 추가 + `peerDependenciesMeta.optional: true`
+- `peerDependencies` 에 `@interactive-os/aria-kernel`, `zod-crud` 추가 + `peerDependenciesMeta.optional: true`
   - v0.2 `useEditable` 만 쓰는 consumer 는 둘 다 설치 불필요
   - v0.3 chat composer 사용 시 install 안내가 명확
 - `files: ["dist", "README.md", "CHANGELOG.md"]` 로 동봉
@@ -386,7 +386,7 @@ combobox 등 upstream handler 가 e.preventDefault() 한 후엔 우리는 처리
 
 ---
 
-## F22 · @p/anyeditable 자체 — `minQueryLength` 옵션 (트리거 즉시 popover 지연) (자체 해결)
+## F22 · @interactive-os/anyeditable 자체 — `minQueryLength` 옵션 (트리거 즉시 popover 지연) (자체 해결)
 
 **iter 24 조치:** `useEditableComposer({ minQueryLength: 1 })` — bare `@` 만으론 popover 미표시, `@b` 부터.
 일부 채팅 앱이 채택한 UX (트리거만 누르고 popover 가 즉시 떠서 시야 가리는 문제 회피).
@@ -399,7 +399,7 @@ combobox 등 upstream handler 가 e.preventDefault() 한 후엔 우리는 처리
 
 ---
 
-## F23 · @p/anyeditable 자체 — `aria-multiline` 기본값 정합 수정 (자체 해결)
+## F23 · @interactive-os/anyeditable 자체 — `aria-multiline` 기본값 정합 수정 (자체 해결)
 
 **상황:** iter 1 부터 `rootProps['aria-multiline'] = false` 였음. iter 18 에서 Shift+Enter
 줄바꿈(`insertLineBreak`/`insertParagraph`) 추가했지만 ARIA 어휘 갱신을 누락 — **WAI-ARIA 와
@@ -418,7 +418,7 @@ combobox 등 upstream handler 가 e.preventDefault() 한 후엔 우리는 처리
 ## F24 · `apps/composer-demo` — Vite real-browser smoke (자체 해결)
 
 **iter 26 조치:** monorepo 에 `apps/composer-demo` 워크스페이스 추가.
-- React 19 + Vite 6 + 가족 3 패키지 (@p/anyeditable, @p/aria-kernel, zod-crud)
+- React 19 + Vite 6 + 가족 3 패키지 (@interactive-os/anyeditable, @interactive-os/aria-kernel, zod-crud)
 - 단일 `App.tsx` (78줄) 가 모든 v0.3 표면 사용 — `@`/`/` triggers, popover ARIA, 줄바꿈, undo/redo, submit
 - CSS chip styling 으로 시각 검증 가능
 - `npm run dev` (vite) — 브라우저에서 실제 IME, 모바일, paste, 한글 전체 회귀

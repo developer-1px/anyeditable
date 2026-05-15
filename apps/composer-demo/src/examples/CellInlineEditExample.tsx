@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useEditable, type NavDir } from '@p/anyeditable'
+import { useEditable, type NavDir } from '@interactive-os/anyeditable'
 import { CodeBlock } from '../docs/CodeBlock.js'
 import { CELL_INLINE_EDIT_SNIPPET } from './snippets.js'
 

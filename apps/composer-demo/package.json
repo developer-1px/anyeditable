@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@interactive-os/document": "file:../../../keyboard/packages/document",
-    "@p/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
-    "@p/anyeditable": "*",
+    "@interactive-os/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
+    "@interactive-os/anyeditable": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^4.4.3",

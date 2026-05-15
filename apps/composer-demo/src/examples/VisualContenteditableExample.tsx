@@ -3,7 +3,7 @@ import { useJsonDocument } from 'zod-crud'
 import {
   ComposerDoc, EMPTY_DOC, serialize, useEditableSurface,
   type ComposerDoc as ComposerDocType, type JsonOps,
-} from '@p/anyeditable'
+} from '@interactive-os/anyeditable'
 import { CodeBlock } from '../docs/CodeBlock.js'
 import { VISUAL_CONTENTEDITABLE_SNIPPET } from './snippets.js'
 

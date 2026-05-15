@@ -6,7 +6,7 @@ interactive-os packages should behave like Unix-style core tools: small, stable,
 
 ## Decision
 
-`@interactive-os/keyboard` is the canonical key input kernel for `@p/anyeditable`.
+`@interactive-os/keyboard` is the canonical key input kernel for `@interactive-os/anyeditable`.
 
 The integration is intentionally thin:
 

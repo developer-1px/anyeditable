@@ -14,4 +14,4 @@ interactive-os preview surfaces should be driven by one source document, not by 
 
 - `@interactive-os/document` reads source-shaped metadata.
 - `composer-demo` renders the preview.
-- `@p/anyeditable` still owns editing behavior, not page copy or preview metadata.
+- `@interactive-os/anyeditable` still owns editing behavior, not page copy or preview metadata.

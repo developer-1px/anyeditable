@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { ROOT } from '@p/aria-kernel'
+import { ROOT } from '@interactive-os/aria-kernel'
 import { useEphemeralCollection } from '../useEphemeralCollection.js'
 
 const items = (...ids: string[]) => ids.map(id => ({ id, label: id.toUpperCase() }))

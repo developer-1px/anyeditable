@@ -1,11 +1,11 @@
 ---
-ralph: @p/anyeditable/chat-composer
+ralph: @interactive-os/anyeditable/chat-composer
 version: 0.3.0-spec.1
-identity: dogfooding (@p/aria-kernel + zod-crud)
+identity: dogfooding (@interactive-os/aria-kernel + zod-crud)
 scope: single-user, single-paragraph, atomic-embed only
 status: ✅ shipped (v0.3.0) · iter 28 · 24 findings · 6 issues filed · 18 self-resolved
 artifacts:
-  - kernel: packages/@p/anyeditable/src/composer/ (11 모듈, gzip 5.9 KB)
+  - kernel: packages/@interactive-os/anyeditable/src/composer/ (11 모듈, gzip 5.9 KB)
   - demo:   apps/composer-demo/ (Vite real-browser smoke)
   - tests:  72 passing across 12 files
   - findings: DOGFOOD-FINDINGS.md (24 항목 + 가족 invariant insights)
@@ -13,7 +13,7 @@ artifacts:
 
 # Mission
 
-`@p/aria-kernel` 과 `zod-crud` 를 **개밥먹기**하여, contenteditable 기반
+`@interactive-os/aria-kernel` 과 `zod-crud` 를 **개밥먹기**하여, contenteditable 기반
 chat composer 의 **mention(@) + slash-command(/)** 입력을 헤드리스로 제공한다.
 
 — Lexical/ProseMirror 류를 끌어오지 않고 두 패키지 합성만으로 정직하게 풀린다는
@@ -28,8 +28,8 @@ chat composer 의 **mention(@) + slash-command(/)** 입력을 헤드리스로 �
 - I3. **`useComboboxPattern` 재사용** — popover ARIA 자체 구현 금지
 - I4. **`useJson` 재사용** — 자체 모델/undo 구현 금지
 - I5. **세 패키지 의존 방향 1차 단방향**:
-        @p/anyeditable ─▶ @p/aria-kernel
-        @p/anyeditable ─▶ zod-crud
+        @interactive-os/anyeditable ─▶ @interactive-os/aria-kernel
+        @interactive-os/anyeditable ─▶ zod-crud
         역방향·횡단 의존 금지
 - I6. **Model is truth** — `beforeinput.preventDefault()` 후 ops 발행 (IME 예외 §C)
 

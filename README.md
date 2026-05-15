@@ -1,4 +1,4 @@
-# @p/anyeditable
+# @interactive-os/anyeditable
 
 Headless inline-edit kernels for React.
 **Two hooks, one identity** — markup·CSS·design tokens are 0건. Props 만 반환.
@@ -11,8 +11,8 @@ Headless inline-edit kernels for React.
 The v0.3 surface is part of a **3-package family** dogfooded together:
 
 ```
-@p/anyeditable ─▶ @p/aria-kernel  (useComboboxPattern, axes, fromList)
-@p/anyeditable ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
+@interactive-os/anyeditable ─▶ @interactive-os/aria-kernel  (useComboboxPattern, axes, fromList)
+@interactive-os/anyeditable ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
 ```
 
 — closed under W3C/IETF/WAI standards. No Lexical / ProseMirror / Slate.
@@ -20,15 +20,15 @@ The v0.3 surface is part of a **3-package family** dogfooded together:
 ## Install
 
 ```bash
-npm i @p/anyeditable
+npm i @interactive-os/anyeditable
 # v0.3 surface additionally requires:
-npm i @p/aria-kernel zod-crud zod
+npm i @interactive-os/aria-kernel zod-crud zod
 ```
 
 ## v0.2 — `useEditable` (cell / single-line edit)
 
 ```tsx
-import { useEditable } from '@p/anyeditable'
+import { useEditable } from '@interactive-os/anyeditable'
 
 function CellGrid({ values, save }) {
   const ed = useEditable<string>({
@@ -54,11 +54,11 @@ What you get: IME-safe Enter/Escape · Type-to-edit · Navigate-after-commit · 
 ## v0.3 — `useEditableSurface` (contenteditable surface)
 
 ```tsx
-import { useEditableSurface, useEphemeralCollection } from '@p/anyeditable'
+import { useEditableSurface, useEphemeralCollection } from '@interactive-os/anyeditable'
 import { useJsonDocument } from 'zod-crud'
-import { fromList } from '@p/aria-kernel'
-import { useComboboxPattern } from '@p/aria-kernel/patterns'
-import { ComposerDoc, EMPTY_DOC } from '@p/anyeditable'
+import { fromList } from '@interactive-os/aria-kernel'
+import { useComboboxPattern } from '@interactive-os/aria-kernel/patterns'
+import { ComposerDoc, EMPTY_DOC } from '@interactive-os/anyeditable'
 
 function ChatComposer({ users, onSend }) {
   const jd = useJsonDocument(ComposerDoc, EMPTY_DOC, { history: 50 })
@@ -130,12 +130,12 @@ Vocabulary is grep-firsted from W3C/WHATWG/WAI specs only:
 // vitest.config.ts
 export default defineConfig({
   resolve: { dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
-  server: { deps: { inline: ['@p/aria-kernel'] } },
+  server: { deps: { inline: ['@interactive-os/aria-kernel'] } },
   test: { environment: 'jsdom' },
 })
 ```
 
-`@p/aria-kernel` 설치된 monorepo 의 React 중복 인스턴스 방지.
+`@interactive-os/aria-kernel` 설치된 monorepo 의 React 중복 인스턴스 방지.
 
 ## Out of scope (intentional)
 
