@@ -2,6 +2,7 @@ import { NotebookSection } from './docs/NotebookSection.js'
 import { CellInlineEditExample } from './examples/CellInlineEditExample.js'
 import { ComposerExample } from './examples/ComposerExample.js'
 import { DocumentSurfaceExample } from './examples/DocumentSurfaceExample.js'
+import { NativeDocumentScratchExample } from './examples/NativeDocumentScratchExample.js'
 import { VisualContenteditableExample } from './examples/VisualContenteditableExample.js'
 import { previewDocument, type PreviewSection } from './previewDocument.js'
 
@@ -70,6 +71,11 @@ export function App() {
       <NotebookSection id={sections[6]!.id} title={sections[6]!.title}>
         <SectionParagraphs section={sections[6]!} />
         <DocumentSurfaceExample />
+      </NotebookSection>
+
+      <NotebookSection id={sections[7]!.id} title={sections[7]!.title}>
+        <SectionParagraphs section={sections[7]!} />
+        <NativeDocumentScratchExample />
       </NotebookSection>
     </main>
   )

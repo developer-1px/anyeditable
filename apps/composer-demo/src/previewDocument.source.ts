@@ -84,5 +84,12 @@ export const playground = {
         'Obsidian-style editor core를 위한 block 문서 편집 surface입니다. 문서 block model은 host가 소유하고, surface는 contenteditable DOM, selection mapping, beforeinput operation emission만 맡습니다.',
       ],
     },
+    {
+      id: 'native-document-scratch',
+      title: '7. Zero-base native document scratch',
+      paragraphs: [
+        '6번을 땜질하지 않고, contenteditable의 최신 production 원칙에 맞춰 다시 만든 실험 surface입니다. IME와 일반 입력은 native DOM을 먼저 믿고, input 이후 state가 따라오며, 구조 변경만 beforeinput에서 가로챕니다.',
+      ],
+    },
   ],
 } as const

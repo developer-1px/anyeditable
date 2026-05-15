@@ -5,7 +5,7 @@ type ApiRow = readonly [name: string, description: string]
 type FlowRow = readonly [name: string, description: string]
 
 export type PreviewSection = {
-  id: 'scope' | 'inline-edit' | 'cell-inline-edit' | 'composer' | 'internals' | 'tests' | 'document-surface'
+  id: 'scope' | 'inline-edit' | 'cell-inline-edit' | 'composer' | 'internals' | 'tests' | 'document-surface' | 'native-document-scratch'
   title: string
   paragraphs: readonly string[]
   flow?: readonly FlowRow[]
