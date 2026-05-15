@@ -1,4 +1,4 @@
-export const playground = ({
+export const playground = {
   header: {
     kicker: '기술 노트 / playground',
     title: '@interactive-os/anyeditable',
@@ -78,4 +78,4 @@ export const playground = ({
       ],
     },
   ],
-}) as const
+} as const

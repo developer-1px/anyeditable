@@ -1,4 +1,5 @@
 import { readPlaygroundSource } from '@interactive-os/document'
+import { defineDocument } from '@interactive-os/site-generator'
 import source from './previewDocument.source.ts?raw'
 
 type ApiRow = readonly [name: string, description: string]
@@ -26,13 +27,11 @@ export type PreviewDocument = {
   sections: readonly PreviewSection[]
 }
 
-const parsed = readPlaygroundSource(source)
-
-if (!isPreviewDocument(parsed)) {
-  throw new Error('Invalid composer demo preview document')
-}
-
-export const previewDocument = parsed
+export const previewDocument = defineDocument(
+  readPlaygroundSource(source),
+  isPreviewDocument,
+  'Invalid composer demo preview document',
+)
 
 function isPreviewDocument(value: unknown): value is PreviewDocument {
   if (!value || typeof value !== 'object') return false

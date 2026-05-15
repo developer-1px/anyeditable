@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@interactive-os/document": "file:../../../keyboard/packages/document",
+    "@interactive-os/site-generator": "file:../../../keyboard/packages/site-generator",
     "@interactive-os/aria-kernel": "file:../../../aria-kernel/packages/aria-kernel",
     "@interactive-os/anyeditable": "*",
     "react": "^19.0.0",
