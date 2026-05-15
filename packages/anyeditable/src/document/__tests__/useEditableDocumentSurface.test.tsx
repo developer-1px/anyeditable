@@ -91,6 +91,34 @@ describe('useEditableDocumentSurface', () => {
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
     expect(editor.textContent).toBe('한')
   })
+
+  it('does not duplicate a final IME insertCompositionText event after compositionend', () => {
+    const r = render(<Harness initial={[p('a', '')]} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 0)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㅎ')
+    editor.querySelector('[data-doc-block-index="0"]')!.textContent = '한'
+    fireEvent.compositionEnd(editor, { data: '한' })
+    const finalInsert = beforeInput(editor, 'insertCompositionText', '한')
+    expect(finalInsert.defaultPrevented).toBe(true)
+    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
+    expect(editor.textContent).toBe('한')
+  })
+
+  it('commits from the first final input event when compositionend has no data', () => {
+    const r = render(<Harness initial={[p('a', '')]} />)
+    const editor = r.getByTestId('editor')
+    placeCaret(editor, 0, 0)
+    fireEvent.compositionStart(editor)
+    beforeInput(editor, 'insertCompositionText', 'ㅎ')
+    fireEvent.compositionEnd(editor, { data: '' })
+    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('')
+    const finalInsert = beforeInput(editor, 'insertCompositionText', '한')
+    expect(finalInsert.defaultPrevented).toBe(true)
+    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].text).toBe('한')
+    expect(editor.textContent).toBe('한')
+  })
 })
 
 function Harness({ initial }: { initial: TestBlock[] }) {

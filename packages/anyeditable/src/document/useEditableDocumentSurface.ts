@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode
 import { isImeSafe, matches } from '@interactive-os/keyboard'
 import type { JsonPatchOperation } from 'zod-crud'
 import type {
+  DocumentRange,
   DocumentPosition,
   UseEditableDocumentSurfaceOptions,
   UseEditableDocumentSurfaceReturn,
@@ -26,8 +27,9 @@ export function useEditableDocumentSurface<TBlock>(
   const elRef = useRef<HTMLElement | null>(null)
   const [el, setEl] = useState<HTMLElement | null>(null)
   const composing = useRef(false)
-  const compositionRange = useRef<ReturnType<typeof resolveDocumentRange> | null>(null)
-  const ignoreNextInsertText = useRef<string | null>(null)
+  const compositionRange = useRef<DocumentRange | null>(null)
+  const pendingCompositionCommit = useRef<{ range: DocumentRange; text?: string } | null>(null)
+  const ignoreNextNativeCommit = useRef<string | null>(null)
   const pendingSelection = useRef<DocumentPosition | null>(null)
   const stateRef = useRef({ blocks, adapter, ops, readOnly })
   Object.assign(stateRef.current, { blocks, adapter, ops, readOnly })
@@ -44,6 +46,14 @@ export function useEditableDocumentSurface<TBlock>(
     stateRef.current.ops.apply(result.patches)
   }, [])
 
+  const commitComposition = useCallback((range: DocumentRange, text: string) => {
+    if (!text) return false
+    ignoreNextNativeCommit.current = text
+    pendingCompositionCommit.current = null
+    apply(replaceRangeTextOps(stateRef.current.blocks, stateRef.current.adapter, range, text))
+    return true
+  }, [apply])
+
   const handleBeforeInput = useCallback((event: Event) => {
     const e = event as InputEvent
     const root = elRef.current
@@ -52,14 +62,31 @@ export function useEditableDocumentSurface<TBlock>(
     const range = resolveDocumentRange(root)
     if (!range) return
     const { start } = orderedRange(range)
-    if (composing.current || e.inputType === 'insertCompositionText') return
+    if (composing.current) return
+    if (e.inputType === 'insertCompositionText') {
+      if (pendingCompositionCommit.current) {
+        e.preventDefault()
+        commitComposition(pendingCompositionCommit.current.range, e.data ?? pendingCompositionCommit.current.text ?? '')
+        return
+      }
+      if (ignoreNextNativeCommit.current && ignoreNextNativeCommit.current === (e.data ?? '')) {
+        ignoreNextNativeCommit.current = null
+        e.preventDefault()
+      }
+      return
+    }
     if (e.inputType === 'insertText') {
-      if (ignoreNextInsertText.current && ignoreNextInsertText.current === (e.data ?? '')) {
-        ignoreNextInsertText.current = null
+      if (pendingCompositionCommit.current) {
+        e.preventDefault()
+        commitComposition(pendingCompositionCommit.current.range, e.data ?? pendingCompositionCommit.current.text ?? '')
+        return
+      }
+      if (ignoreNextNativeCommit.current && ignoreNextNativeCommit.current === (e.data ?? '')) {
+        ignoreNextNativeCommit.current = null
         e.preventDefault()
         return
       }
-      ignoreNextInsertText.current = null
+      ignoreNextNativeCommit.current = null
       e.preventDefault()
       apply(insertTextOps(state.blocks, state.adapter, start, e.data ?? ''))
     } else if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
@@ -76,7 +103,7 @@ export function useEditableDocumentSurface<TBlock>(
       e.preventDefault()
       apply(pasteTextOps(state.blocks, state.adapter, start, text))
     }
-  }, [apply])
+  }, [apply, commitComposition])
 
   const handlePaste = useCallback((e: ClipboardEvent) => {
     const root = elRef.current
@@ -92,13 +119,13 @@ export function useEditableDocumentSurface<TBlock>(
     composing.current = false
     const root = elRef.current
     const state = stateRef.current
-    if (!root || state.readOnly || !e.data) return
     const range = compositionRange.current
     compositionRange.current = null
-    if (!range) return
-    ignoreNextInsertText.current = e.data
-    apply(replaceRangeTextOps(state.blocks, state.adapter, range, e.data))
-  }, [apply])
+    if (!root || state.readOnly || !range) return
+    pendingCompositionCommit.current = e.data ? { range, text: e.data } : { range }
+    if (!e.data) return
+    commitComposition(range, e.data)
+  }, [commitComposition])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
     const root = elRef.current
