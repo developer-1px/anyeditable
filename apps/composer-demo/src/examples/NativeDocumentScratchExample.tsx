@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { startTransition, useCallback, useLayoutEffect, useRef, useState } from 'react'
 
 interface ScratchBlock {
   id: string
@@ -14,11 +14,15 @@ const INITIAL_BLOCKS: ScratchBlock[] = [
 export function NativeDocumentScratchExample() {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const [blocks, setBlocks] = useState<ScratchBlock[]>(INITIAL_BLOCKS)
+  const [traceEnabled, setTraceEnabled] = useState(false)
   const [trace, setTrace] = useState<string[]>([])
   const blocksRef = useRef(blocks)
+  const traceBufferRef = useRef<string[]>([])
+  const traceFrameRef = useRef<number | null>(null)
   blocksRef.current = blocks
 
   const pushTrace = useCallback((label: string, event?: Event) => {
+    if (!traceEnabled) return
     const root = rootRef.current
     const native = event as InputEvent | CompositionEvent | KeyboardEvent | undefined
     const line = `${new Date().toISOString()} ${label} ${JSON.stringify({
@@ -33,7 +37,18 @@ export function NativeDocumentScratchExample() {
       state: blocksRef.current.map(block => block.text),
     })}`
     console.info('[native-document-scratch:trace]', line)
-    setTrace(current => [line, ...current].slice(0, 100))
+    traceBufferRef.current = [line, ...traceBufferRef.current].slice(0, 40)
+    if (traceFrameRef.current !== null) return
+    traceFrameRef.current = requestAnimationFrame(() => {
+      traceFrameRef.current = null
+      setTrace(traceBufferRef.current)
+    })
+  }, [traceEnabled])
+
+  useLayoutEffect(() => {
+    return () => {
+      if (traceFrameRef.current !== null) cancelAnimationFrame(traceFrameRef.current)
+    }
   }, [])
 
   useLayoutEffect(() => {
@@ -45,7 +60,9 @@ export function NativeDocumentScratchExample() {
   const syncStateFromDom = useCallback(() => {
     const root = rootRef.current
     const next = readBlocksFromDom(root)
-    if (next.length > 0) setBlocks(next)
+    if (next.length === 0) return
+    blocksRef.current = next
+    startTransition(() => setBlocks(next))
   }, [])
 
   useLayoutEffect(() => {
@@ -131,8 +148,20 @@ export function NativeDocumentScratchExample() {
       <div className="observe">
         <h3>관찰</h3>
         <pre data-testid="native-document-state">{JSON.stringify({ blocks }, null, 2)}</pre>
-        <h3>Native trace</h3>
-        <pre data-testid="native-document-trace">{trace.join('\n')}</pre>
+        <label>
+          <input
+            type="checkbox"
+            checked={traceEnabled}
+            onChange={event => {
+              setTraceEnabled(event.currentTarget.checked)
+              if (!event.currentTarget.checked) {
+                traceBufferRef.current = []
+                setTrace([])
+              }
+            }}
+          /> Native trace
+        </label>
+        <pre data-testid="native-document-trace">{traceEnabled ? trace.join('\n') : 'trace paused'}</pre>
       </div>
     </div>
   )
