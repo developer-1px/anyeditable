@@ -7,6 +7,19 @@ import { previewDocument, type PreviewSection } from './previewDocument.js'
 
 export function App() {
   const { header, apiGroups, sections } = previewDocument
+  const sectionById = new Map(sections.map(section => [section.id, section]))
+  const section = (id: PreviewSection['id']) => {
+    const found = sectionById.get(id)
+    if (!found) throw new Error(`Missing preview section: ${id}`)
+    return found
+  }
+  const scope = section('scope')
+  const inlineEdit = section('inline-edit')
+  const composer = section('composer')
+  const internals = section('internals')
+  const tests = section('tests')
+  const documentSurface = section('document-surface')
+  const nativeDocumentScratch = section('native-document-scratch')
 
   return (
     <main className="doc">
@@ -17,8 +30,8 @@ export function App() {
         <pre className="install"><code>{header.install}</code></pre>
       </header>
 
-      <NotebookSection id={sections[0]!.id} title={sections[0]!.title}>
-        <SectionParagraphs section={sections[0]!} />
+      <NotebookSection id={scope.id} title={scope.title}>
+        <SectionParagraphs section={scope} />
         <div className="api-groups">
           {apiGroups.map(group => (
             <section key={group.title}>
@@ -36,39 +49,39 @@ export function App() {
         </div>
       </NotebookSection>
 
-      <NotebookSection id={sections[1]!.id} title={sections[1]!.title}>
-        <SectionParagraphs section={sections[1]!} />
+      <NotebookSection id={inlineEdit.id} title={inlineEdit.title}>
+        <SectionParagraphs section={inlineEdit} />
         <VisualContenteditableExample />
       </NotebookSection>
 
-      <NotebookSection id={sections[2]!.id} title={sections[2]!.title}>
-        <SectionParagraphs section={sections[2]!} />
+      <NotebookSection id={composer.id} title={composer.title}>
+        <SectionParagraphs section={composer} />
         <ComposerExample />
       </NotebookSection>
 
-      <NotebookSection id={sections[4]!.id} title={sections[4]!.title}>
-        <SectionParagraphs section={sections[4]!} />
+      <NotebookSection id={internals.id} title={internals.title}>
+        <SectionParagraphs section={internals} />
         <ol className="flow">
-          {sections[4]!.flow?.map(([name, description]) => (
+          {internals.flow?.map(([name, description]) => (
             <li key={name}><strong>{name}</strong><span>{description}</span></li>
           ))}
         </ol>
       </NotebookSection>
 
-      <NotebookSection id={sections[5]!.id} title={sections[5]!.title}>
-        <SectionParagraphs section={sections[5]!} />
+      <NotebookSection id={tests.id} title={tests.title}>
+        <SectionParagraphs section={tests} />
         <ul>
-          {sections[5]!.bullets?.map(item => <li key={item}>{item}</li>)}
+          {tests.bullets?.map(item => <li key={item}>{item}</li>)}
         </ul>
       </NotebookSection>
 
-      <NotebookSection id={sections[6]!.id} title={sections[6]!.title}>
-        <SectionParagraphs section={sections[6]!} />
+      <NotebookSection id={documentSurface.id} title={documentSurface.title}>
+        <SectionParagraphs section={documentSurface} />
         <DocumentSurfaceExample />
       </NotebookSection>
 
-      <NotebookSection id={sections[7]!.id} title={sections[7]!.title}>
-        <SectionParagraphs section={sections[7]!} />
+      <NotebookSection id={nativeDocumentScratch.id} title={nativeDocumentScratch.title}>
+        <SectionParagraphs section={nativeDocumentScratch} />
         <NativeDocumentScratchExample />
       </NotebookSection>
     </main>

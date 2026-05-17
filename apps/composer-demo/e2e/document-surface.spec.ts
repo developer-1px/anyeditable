@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 
-const ROOT = '.document-surface'
+const ROOT = '[data-testid="document-surface"]'
 const STATE = '[data-testid="document-state"]'
 
 test.beforeEach(async ({ page }) => {
@@ -22,12 +22,13 @@ test('heading typing updates the heading block', async ({ page }) => {
   await expect(page.locator(`${ROOT} h2[data-doc-block-index="1"]`)).toHaveText('Title')
 })
 
-test('bold shortcut decorates selected inline text', async ({ page, browserName }) => {
+test('bold shortcut keeps the document surface plain text', async ({ page, browserName }) => {
   await selectText(page, 2, 0, 4)
   await page.keyboard.press(browserName === 'webkit' ? 'Meta+B' : 'Control+B')
   const blocks = await readBlocks(page)
-  expect(blocks[2].marks).toEqual([{ kind: 'bold', from: 0, to: 4 }])
-  await expect(page.locator(`${ROOT} [data-doc-mark-kind="bold"]`)).toHaveText('bold')
+  expect(blocks[2]).toMatchObject({ text: 'hello world' })
+  expect(blocks[2].marks).toBeUndefined()
+  await expect(page.locator(`${ROOT} [data-doc-block-index="2"]`)).toHaveText('hello world')
 })
 
 test('Enter splits and Backspace at start merges blocks', async ({ page }) => {
