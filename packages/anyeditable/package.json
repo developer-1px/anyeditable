@@ -1,7 +1,7 @@
 {
   "name": "@interactive-os/anyeditable",
-  "version": "0.4.0",
-  "description": "Headless React kernels for any text-editable surface. useEditable covers input/textarea/select inline edits; useEditableSurface covers contenteditable visual surfaces, composers, triggers, and atomic chips.",
+  "version": "0.5.0",
+  "description": "Headless React kernel for contenteditable surfaces. Plain text only — no marks, no formatting. IME-safe, multi-block, optional @mention/slash command/atomic chips. SSOT is the app's zod-crud doc.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -21,8 +21,6 @@
   },
   "keywords": [
     "react",
-    "edit",
-    "inline-edit",
     "contenteditable",
     "editable-surface",
     "mention",
@@ -31,7 +29,8 @@
     "composition",
     "hangul",
     "headless",
-    "aria"
+    "aria",
+    "plain-text"
   ],
   "scripts": {
     "clean": "rm -rf dist",

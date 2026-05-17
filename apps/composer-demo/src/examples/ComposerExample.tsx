@@ -1,8 +1,8 @@
 import { useMemo, useState, type HTMLAttributes, type KeyboardEvent, type LiHTMLAttributes } from 'react'
-import { useJsonDocument } from 'zod-crud'
+import { useJSONDocument } from 'zod-crud'
 import {
   ComposerDoc, EMPTY_DOC, serialize, useEditableSurface,
-  type ComposerDoc as ComposerDocType, type JsonOps,
+  type ComposerDoc as ComposerDocType, type JSONOps,
 } from '@interactive-os/anyeditable'
 import { CodeBlock } from '../docs/CodeBlock.js'
 import { useTriggerCombobox } from '../useTriggerCombobox.js'
@@ -23,12 +23,12 @@ const COMMANDS = [
 
 export function ComposerExample() {
   const [submitted, setSubmitted] = useState<unknown>(null)
-  const jd = useJsonDocument(
-    ComposerDoc as unknown as Parameters<typeof useJsonDocument>[0],
+  const jd = useJSONDocument(
+    ComposerDoc as unknown as Parameters<typeof useJSONDocument>[0],
     EMPTY_DOC, { history: 50 },
   )
   const doc = jd.value as ComposerDocType
-  const ops = useMemo<JsonOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
+  const ops = useMemo<JSONOps>(() => ({ apply: (patches) => { jd.ops.patch(patches) } }), [jd.ops])
 
   const c = useEditableSurface({
     doc, ops,

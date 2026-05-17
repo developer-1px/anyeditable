@@ -2,15 +2,15 @@ export const playground = {
   header: {
     kicker: '기술 노트 / playground',
     title: '@interactive-os/anyeditable',
-    description: 'React에서 직접 만든 편집 UI에 붙이는 headless editing lifecycle hook입니다. 아직 범용 editor framework가 아니라, 현재는 두 가지 편집 surface를 안정적으로 다루는 패키지입니다.',
+    description: 'React에서 직접 만든 편집 UI에 붙이는 headless contenteditable lifecycle hook입니다. plain text 전용 — mark/formatting 없음.',
     install: 'npm i @interactive-os/anyeditable',
   },
   apiGroups: [
     {
       title: '주요 hook',
       rows: [
-        ['useEditableSurface', 'contenteditable 기반 visual surface와 composer lifecycle'],
-        ['useEditable', 'input, textarea, select 기반 inline edit lifecycle'],
+        ['useEditableSurface', '단일 블록 contenteditable composer (@mention, /command, atomic chip)'],
+        ['useEditableDocumentSurface', '멀티블록 contenteditable document (splitBlock, plain-text paste)'],
       ],
     },
     {
@@ -39,15 +39,8 @@ export const playground = {
       ],
     },
     {
-      id: 'cell-inline-edit',
-      title: '2. input 기반 cell/grid inline edit',
-      paragraphs: [
-        '같은 lifecycle을 표나 그리드에 붙이면 type-to-edit, 이동 후 commit, blur commit을 재사용할 수 있습니다. 이 예제는 useEditable의 input 기반 usage만 보여줍니다.',
-      ],
-    },
-    {
       id: 'composer',
-      title: '3. 확장형: contenteditable composer',
+      title: '2. 확장형: contenteditable composer',
       paragraphs: [
         '채팅 composer처럼 trigger, atomic chip, submit이 필요해지면 같은 useEditableSurface를 더 넓게 씁니다. 이 영역은 flat ComposerDoc과 patch 흐름으로 다룹니다.',
       ],

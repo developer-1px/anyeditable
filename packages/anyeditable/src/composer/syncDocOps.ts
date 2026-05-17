@@ -2,7 +2,7 @@ import { useMemo, type MutableRefObject } from 'react'
 import { applyPatch as zodApply } from 'zod-crud'
 import { ComposerDoc as ComposerDocSchema, type ComposerDoc } from './schema.js'
 import type { Patch } from './blockOps.js'
-import type { JsonOps } from './useEditableSurface.js'
+import type { JSONOps } from './useEditableSurface.js'
 
 export interface DocSnapshotRef {
   current: { doc: ComposerDoc; [k: string]: unknown }
@@ -12,8 +12,8 @@ export interface DocSnapshotRef {
  *  in `stateRef.current.doc` BEFORE forwarding to the user's async setter.
  *  Without this, rapid keystrokes batched across React renders would read
  *  stale doc and produce out-of-order patches (the `dlrow olleh` bug). */
-export function useSyncDocOps(userOps: JsonOps, stateRef: DocSnapshotRef): JsonOps {
-  return useMemo<JsonOps>(() => ({
+export function useSyncDocOps(userOps: JSONOps, stateRef: DocSnapshotRef): JSONOps {
+  return useMemo<JSONOps>(() => ({
     apply: (patches) => {
       const next = zodApply(
         ComposerDocSchema as unknown as Parameters<typeof zodApply>[0],

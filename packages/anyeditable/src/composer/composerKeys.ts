@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import type { KeyboardEvent } from 'react'
-import { isImeSafe, matches } from '@interactive-os/keyboard'
+import { isIMESafe, matchesShortcut } from '@interactive-os/keyboard'
 import { toKeyInput } from '../keyboardInput.js'
 
 export interface KeyOpts {
@@ -19,13 +19,13 @@ export function useComposerKeys(opts: KeyOpts) {
   return useCallback((e: KeyboardEvent<HTMLElement>) => {
     if (e.defaultPrevented) return
     const key = toKeyInput(e, { isComposing: composing.current })
-    if (!isImeSafe(key)) return
-    if (matches(key, 'Control+z Meta+z Control+Z Meta+Z Control+Shift+z Meta+Shift+z Control+Shift+Z Meta+Shift+Z')) {
+    if (!isIMESafe(key)) return
+    if (matchesShortcut(key, 'Control+z Meta+z Control+Z Meta+Z Control+Shift+z Meta+Shift+z Control+Shift+Z Meta+Shift+Z')) {
       const handler = key.shiftKey ? onRedo : onUndo
       if (handler) { e.preventDefault(); handler() }
       return
     }
-    if (matches(key, 'Enter')) { e.preventDefault(); submit?.() }
-    else if (matches(key, 'Escape') && trigger) { e.preventDefault(); cancelTrigger() }
+    if (matchesShortcut(key, 'Enter')) { e.preventDefault(); submit?.() }
+    else if (matchesShortcut(key, 'Escape') && trigger) { e.preventDefault(); cancelTrigger() }
   }, [composing, trigger, cancelTrigger, submit, onUndo, onRedo])
 }

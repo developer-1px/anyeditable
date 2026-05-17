@@ -1,16 +1,4 @@
-export const CELL_INLINE_EDIT_SNIPPET = `const ed = useEditable({
-  getValue: id => values[id],
-  onCommit: (id, next) => save(id, next),
-  onNavigate: (id, dir) => nextCell(id, dir),
-})
-
-return ed.editing === id
-  ? <input {...ed.inputProps} />
-  : <button onDoubleClick={() => ed.startEdit(id)}>
-      {values[id]}
-    </button>`
-
-export const VISUAL_CONTENTEDITABLE_SNIPPET = `const titleDoc = useJsonDocument(
+export const VISUAL_CONTENTEDITABLE_SNIPPET = `const titleDoc = useJSONDocument(
   ComposerDoc,
   { blocks: [{ kind: 'text', text: '캠페인 런칭' }] },
 )

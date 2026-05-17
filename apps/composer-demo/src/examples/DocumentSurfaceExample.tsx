@@ -1,21 +1,20 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { CodeBlock } from '../docs/CodeBlock.js'
-import { useEditableDocumentSurface, type EditableDocumentBlockAdapter, type EditableDocumentMark } from '@interactive-os/anyeditable'
-import type { JsonPatchOperation } from 'zod-crud'
+import { useEditableDocumentSurface, type EditableDocumentBlockAdapter } from '@interactive-os/anyeditable'
+import type { JSONPatchOperation } from 'zod-crud'
 
 interface DemoBlock {
   id: string
   kind: 'paragraph' | 'heading' | 'code'
   text: string
   level?: 1 | 2
-  marks?: EditableDocumentMark[]
 }
 
 const INITIAL_BLOCKS: DemoBlock[] = [
-  { id: 'p1', kind: 'paragraph', text: '', marks: [] },
-  { id: 'h1', kind: 'heading', level: 2, text: '', marks: [] },
-  { id: 'p2', kind: 'paragraph', text: 'bold target', marks: [] },
-  { id: 'c1', kind: 'code', text: 'const ok = true', marks: [] },
+  { id: 'p1', kind: 'paragraph', text: '' },
+  { id: 'h1', kind: 'heading', level: 2, text: '' },
+  { id: 'p2', kind: 'paragraph', text: 'hello world' },
+  { id: 'c1', kind: 'code', text: 'const ok = true' },
 ]
 
 const DOCUMENT_SURFACE_SNIPPET = `const surface = useEditableDocumentSurface({
@@ -42,18 +41,17 @@ export function DocumentSurfaceExample() {
     getKey: block => block.id,
     getKind: block => block.kind,
     getText: block => block.text,
-    getMarks: block => block.marks ?? [],
     getHeadingLevel: block => block.level ?? 2,
-    createParagraph: text => ({ id: crypto.randomUUID(), kind: 'paragraph', text, marks: [] }),
-    createHeading: (text, level) => ({ id: crypto.randomUUID(), kind: 'heading', level: level === 1 ? 1 : 2, text, marks: [] }),
-    createCode: text => ({ id: crypto.randomUUID(), kind: 'code', text, marks: [] }),
+    createParagraph: text => ({ id: crypto.randomUUID(), kind: 'paragraph', text }),
+    createHeading: (text, level) => ({ id: crypto.randomUUID(), kind: 'heading', level: level === 1 ? 1 : 2, text }),
+    createCode: text => ({ id: crypto.randomUUID(), kind: 'code', text }),
   }), [])
   const surface = useEditableDocumentSurface({
     blocks,
     adapter,
     ops: {
       apply: patches => {
-        pushTrace('ops.apply', { patches, stateBefore: blocksRef.current.map(block => block.text), dom: snapshotDom(rootRef.current) })
+        pushTrace('ops.apply', { patches, stateBefore: blocksRef.current.map(block => block.text), dom: snapshotDOM(rootRef.current) })
         setBlocks(current => {
           const next = applyPatches(current, patches)
           pushTrace('ops.applied', { stateAfter: next.map(block => block.text) })
@@ -79,7 +77,7 @@ export function DocumentSurfaceExample() {
       isComposing: 'isComposing' in native ? native.isComposing : undefined,
       defaultPrevented: native.defaultPrevented,
       selection: snapshotSelection(rootRef.current),
-      dom: snapshotDom(rootRef.current),
+      dom: snapshotDOM(rootRef.current),
       state: blocksRef.current.map(block => block.text),
     })
   }, [pushTrace])
@@ -103,7 +101,7 @@ export function DocumentSurfaceExample() {
             surface.containerProps.onKeyDown?.(event)
           }}
         />
-        <p className="hint">첫 문단에 입력, heading에 입력, 텍스트 선택 후 Cmd/Ctrl+B, Enter, Backspace를 시도하세요.</p>
+        <p className="hint">첫 문단에 입력, heading에 입력, Enter / Backspace 로 블록을 합치고 나누세요.</p>
       </div>
       <div className="observe">
         <h3>관찰</h3>
@@ -116,7 +114,7 @@ export function DocumentSurfaceExample() {
   )
 }
 
-function applyPatches(blocks: DemoBlock[], patches: readonly JsonPatchOperation[]): DemoBlock[] {
+function applyPatches(blocks: DemoBlock[], patches: readonly JSONPatchOperation[]): DemoBlock[] {
   const next = structuredClone(blocks) as DemoBlock[]
   for (const patch of patches) {
     const parts = patch.path.split('/').slice(1)
@@ -124,13 +122,12 @@ function applyPatches(blocks: DemoBlock[], patches: readonly JsonPatchOperation[
     if (patch.op === 'add') next.splice(index, 0, patch.value as DemoBlock)
     else if (patch.op === 'remove') next.splice(index, 1)
     else if (patch.op === 'replace' && parts[2] === 'text') next[index]!.text = patch.value as string
-    else if (patch.op === 'replace' && parts[2] === 'marks') next[index]!.marks = patch.value as EditableDocumentMark[]
     else if (patch.op === 'replace' && parts.length === 2) next[index] = patch.value as DemoBlock
   }
   return next
 }
 
-function snapshotDom(root: HTMLElement | null): Array<{ index: string; text: string; html: string }> {
+function snapshotDOM(root: HTMLElement | null): Array<{ index: string; text: string; html: string }> {
   if (!root) return []
   return Array.from(root.querySelectorAll<HTMLElement>('[data-doc-block-index]')).map(block => ({
     index: block.dataset.docBlockIndex ?? '',

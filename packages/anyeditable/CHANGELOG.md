@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.0 — Contenteditable-only, plain text (BREAKING)
+
+Scope narrowed to a single identity: **headless React kernel for contenteditable surfaces, plain text only.**
+Form-element inline-edit (`<input>`/`<textarea>`/`<select>`) and inline marks (bold/italic/etc.) leave the package.
+
+### Removed (breaking)
+
+- `useEditable` v0.2 cell hook — entire form-element path. Cell/grid inline-edit is no longer in scope.
+  - Deleted: `useEditable`, `UseEditableOptions`, `InputProps`, `SelectProps`, `NavDir`, `CaretMode`, `buildInputProps`, `buildSelectProps`, `defaultCommitKeyMap`.
+- Inline marks (rich text). `bold` and all other mark kinds removed.
+  - Deleted: `toggleMarkOps`, `EditableDocumentMark`, `EditableDocumentMarkKind`, adapter `getMarks`/`marksPath`, reconciler mark rendering, `Cmd/Ctrl+B` key binding.
+
+### Why
+
+Rich text editing (ProseMirror/Lexical/Slate territory) is explicitly out of scope.
+This package is the **headless plain-text contenteditable kernel** — SSOT is the app's zod-crud doc, library is view-only.
+
+### Migration
+
+- Cell/grid inline-edit → not provided anymore. Implement directly with native DOM events; this package is contenteditable-only.
+- Mark-aware adapters → drop `getMarks`/`marksPath`. Block kinds still supported, inline formatting must be handled by host.
+
 ## 0.4.1 — Rename contenteditable primitive to `useEditableSurface`
 
 `useEditableComposer` made the contenteditable primitive sound chat-specific.
@@ -41,7 +63,7 @@ No runtime API changes.
 - **F28 stale caret out-of-range** — external doc shrink (Cmd+Z, `jd.ops.load`,
   etc.) left `refs.caret.current` pointing past `doc.blocks.length`, generating
   patches like `/blocks/4` against shorter arrays and throwing
-  `JsonCrudError: path_not_found` from zod-crud. `caretClamp.clampCaret` +
+  `JSONCrudError: path_not_found` from zod-crud. `caretClamp.clampCaret` +
   `clampRange` run on every `handleBI` / `handleCE` entry. `useSyncDocOps`
   also drops invalid patch batches and warns rather than forwarding the throw.
 - **Mid-text trigger detection** — `projectText` slices around the caret
@@ -128,7 +150,7 @@ No runtime API changes.
 - `resolveNodeOffset(root, node, offset)` — pure DocPos resolver (avoids
   Selection swap that `resolveRange` previously hacked).
 - `resolveRange` + `DocRange` type — selection range → doc coordinates.
-- `Patch` type alias — RFC 6902 op type for custom JsonOps implementations.
+- `Patch` type alias — RFC 6902 op type for custom JSONOps implementations.
 
 ### Demo
 
@@ -177,7 +199,7 @@ kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Dogfood findings filed
 
-- zod-crud#54 — `JsonOps.apply()` throwing variant
+- zod-crud#54 — `JSONOps.apply()` throwing variant
 - zod-crud#55 — `applyPatch` strict TS inference
 - zod-crud#56 — transaction / coalesce-with-previous for keystroke undo granularity
 - aria-kernel#134 — `NormalizedData` builder for ad-hoc lists

@@ -7,7 +7,7 @@ Related package scopes: @interactive-os/keyboard, @interactive-os/document, @int
 
 ## Problem Statement
 
-Users need `@interactive-os/anyeditable` to provide a headless block document editing surface that can become the browser editing kernel for `@interactive-os/editor`. The current prototype can render block DOM and produce JsonPatchOperation-compatible operations, but it is not IME-safe for Korean/CJK input.
+Users need `@interactive-os/anyeditable` to provide a headless block document editing surface that can become the browser editing kernel for `@interactive-os/editor`. The current prototype can render block DOM and produce JSONPatchOperation-compatible operations, but it is not IME-safe for Korean/CJK input.
 
 The failure mode is not a shortcut problem. It is a DOM ownership problem. During IME composition, the browser owns an active composition text passage inside the `contenteditable` DOM. If React, a reconciler, mark decoration, selection restore, or block re-render touches that active subtree before the browser has completed its composition transaction, Korean/CJK preedit text and caret state can break.
 
@@ -15,7 +15,7 @@ The current package documentation also states that multi-block document trees an
 
 ## Solution
 
-Build a composition-aware document surface kernel that treats IME composition as a first-class transaction. General non-IME editing continues to use `beforeinput` with cancelable native edits converted into JsonPatchOperation-compatible operations. IME composition is different: native DOM mutation is allowed temporarily, reconciliation is frozen for the active editing subtree, and the final committed DOM/input result is converted into operations only after the browser has completed or exposed the composition result.
+Build a composition-aware document surface kernel that treats IME composition as a first-class transaction. General non-IME editing continues to use `beforeinput` with cancelable native edits converted into JSONPatchOperation-compatible operations. IME composition is different: native DOM mutation is allowed temporarily, reconciliation is frozen for the active editing subtree, and the final committed DOM/input result is converted into operations only after the browser has completed or exposed the composition result.
 
 The user-facing outcome is simple: typing Korean text such as `한글 테스트` into the block document surface must not duplicate text, drop text, reorder jamo, move the caret, or lose marks/blocks outside the active composition block.
 
@@ -32,7 +32,7 @@ The user-facing outcome is simple: typing Korean text such as `한글 테스트`
 9. As a document editor user, I want composition after block split or merge to remain stable, so that Enter and Backspace do not poison the next IME session.
 10. As a document editor user, I want non-IME typing to remain patch-only, so that editor state remains deterministic.
 11. As a host app developer, I want document model adapters to remain host-provided, so that `anyeditable` does not own application schema.
-12. As a host app developer, I want emitted operations to stay compatible with JsonPatchOperation, so that existing `zod-crud` integration remains viable.
+12. As a host app developer, I want emitted operations to stay compatible with JSONPatchOperation, so that existing `zod-crud` integration remains viable.
 13. As a host app developer, I want React to own only the container ref and decorator portals, so that React render does not compete with native editing DOM.
 14. As a host app developer, I want active composition transactions to expose debug state, so that IME failures can be diagnosed without guessing.
 15. As a package maintainer, I want IME state to be represented explicitly, so that future fixes are state-machine changes instead of scattered flags.
@@ -62,7 +62,7 @@ The user-facing outcome is simple: typing Korean text such as `한글 테스트`
 - During active composition, external block updates are queued or applied only to non-active blocks. If an external update targets the active block, it must be deferred until commit or explicitly rejected by policy.
 - During active composition, selection mapping may observe but must not force restore. Browser selection is authoritative.
 - After composition, derive a model operation from the committed browser result. Preferred input sources, in order: `input` event target ranges and data, active block DOM diff, composition event data.
-- The operation output remains JsonPatchOperation-compatible and host-adapter based.
+- The operation output remains JSONPatchOperation-compatible and host-adapter based.
 - Non-IME edits continue to use cancelable `beforeinput` with `preventDefault` and operation generation.
 - Non-cancelable or missed `beforeinput` edits must be handled by `input` plus DOM revert/diff logic.
 - React must not render editable block contents. React may own only the container ref, immutable props, and decorator portals outside the active native text path.

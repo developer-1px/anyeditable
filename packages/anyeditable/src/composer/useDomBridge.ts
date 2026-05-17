@@ -1,13 +1,13 @@
 import { useEffect } from 'react'
 import { resolveCaret } from './resolveCaret.js'
-import { handleBI, handleCE, reEvalTrigger, type DomBridgeRefs, type SetTrigger } from './bridgeHandlers.js'
+import { handleBI, handleCE, reEvalTrigger, type DOMBridgeRefs, type SetTrigger } from './bridgeHandlers.js'
 
-export type { DomBridgeRefs } from './bridgeHandlers.js'
+export type { DOMBridgeRefs } from './bridgeHandlers.js'
 
 /** WHATWG Input Events L2 + Selection API native bridge.
  *  IME: composing 동안 ops 보류 → compositionend `event.data` 단발 insertText.
  *  pendingCaret: 매 ops 후 model→DOM caret 복원 트리거 (reconciler 가 소비). */
-export function useDomBridge(refs: DomBridgeRefs, setTrigger: SetTrigger): void {
+export function useDOMBridge(refs: DOMBridgeRefs, setTrigger: SetTrigger): void {
   useEffect(() => {
     const el = refs.el.current
     if (!el) return

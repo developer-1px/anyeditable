@@ -12,7 +12,7 @@ The v0.3 surface is part of a **3-package family** dogfooded together:
 
 ```
 @interactive-os/anyeditable ─▶ @interactive-os/aria-kernel  (useComboboxPattern, axes, fromList)
-@interactive-os/anyeditable ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
+@interactive-os/anyeditable ─▶ zod-crud        (useJSONDocument, JSONPatchOperation)
 ```
 
 — closed under W3C/IETF/WAI standards. No Lexical / ProseMirror / Slate.
@@ -55,13 +55,13 @@ What you get: IME-safe Enter/Escape · Type-to-edit · Navigate-after-commit · 
 
 ```tsx
 import { useEditableSurface, useEphemeralCollection } from '@interactive-os/anyeditable'
-import { useJsonDocument } from 'zod-crud'
+import { useJSONDocument } from 'zod-crud'
 import { fromList } from '@interactive-os/aria-kernel'
 import { useComboboxPattern } from '@interactive-os/aria-kernel/patterns'
 import { ComposerDoc, EMPTY_DOC } from '@interactive-os/anyeditable'
 
 function ChatComposer({ users, onSend }) {
-  const jd = useJsonDocument(ComposerDoc, EMPTY_DOC, { history: 50 })
+  const jd = useJSONDocument(ComposerDoc, EMPTY_DOC, { history: 50 })
   const ops = { apply: (patches) => jd.ops.patch(patches) }
 
   const c = useEditableSurface({
@@ -110,7 +110,7 @@ What you get:
 - **Forward + backward delete** across atomics
 - **DOM Selection ↔ DocPos** via `resolveCaret` + `data-block-index` SSOT
 - **Cmd/Ctrl+Z & Cmd/Ctrl+Shift+Z** keyboard shortcuts
-- **Undo/redo** through zod-crud's `useJsonDocument` history
+- **Undo/redo** through zod-crud's `useJSONDocument` history
 - **gzip ~4 KB** (peer deps 제외)
 
 ## Standards closure

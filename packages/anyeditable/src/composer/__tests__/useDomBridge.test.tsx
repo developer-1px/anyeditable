@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { useRef } from 'react'
 import { renderHook } from '@testing-library/react'
-import { useDomBridge, type DomBridgeRefs } from '../useDomBridge.js'
+import { useDOMBridge, type DOMBridgeRefs } from '../useDOMBridge.js'
 import { EMPTY_DOC, type ComposerDoc } from '../schema.js'
 
 function setup(initialDoc: ComposerDoc = EMPTY_DOC as ComposerDoc) {
@@ -24,11 +24,11 @@ function setup(initialDoc: ComposerDoc = EMPTY_DOC as ComposerDoc) {
     pendingCaret: { current: null as { blockIdx: number; offset: number } | null },
     composing: { current: false },
     state: { current: stateCurrent },
-  } as DomBridgeRefs
+  } as DOMBridgeRefs
   const setTrigger = vi.fn()
   renderHook(() => {
     const r = useRef(refs)
-    useDomBridge(r.current, setTrigger)
+    useDOMBridge(r.current, setTrigger)
   })
   return { el, refs, setTrigger, applied, state: stateCurrent }
 }
@@ -40,7 +40,7 @@ function fakeBeforeInput(type: string, data?: string): Event {
   return ev
 }
 
-describe('useDomBridge', () => {
+describe('useDOMBridge', () => {
   it('compositionstart sets composing flag', () => {
     const { el, refs } = setup()
     el.dispatchEvent(new CompositionEvent('compositionstart'))

@@ -1,13 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { useState } from 'react'
-import { useEditableDocumentSurface, type EditableDocumentBlockAdapter, type EditableDocumentMark } from '../useEditableDocumentSurface.js'
+import { useEditableDocumentSurface, type EditableDocumentBlockAdapter } from '../useEditableDocumentSurface.js'
 
 interface TestBlock {
   id: string
   kind: 'paragraph' | 'heading'
   text: string
-  marks?: EditableDocumentMark[]
   level?: 1 | 2
 }
 
@@ -15,10 +14,9 @@ const adapter: EditableDocumentBlockAdapter<TestBlock> = {
   getKey: block => block.id,
   getKind: block => block.kind,
   getText: block => block.text,
-  getMarks: block => block.marks ?? [],
   getHeadingLevel: block => block.level ?? 2,
-  createParagraph: text => ({ id: 'new', kind: 'paragraph', text, marks: [] }),
-  createHeading: (text, level) => ({ id: 'new', kind: 'heading', text, level: level === 1 ? 1 : 2, marks: [] }),
+  createParagraph: text => ({ id: 'new', kind: 'paragraph', text }),
+  createHeading: (text, level) => ({ id: 'new', kind: 'heading', text, level: level === 1 ? 1 : 2 }),
 }
 
 afterEach(cleanup)
@@ -33,10 +31,9 @@ describe('useEditableDocumentSurface', () => {
     expect(editor.textContent).toBe('A')
   })
 
-  it('renders headings and inline marks as decorated DOM', () => {
-    const r = render(<Harness initial={[{ id: 'h', kind: 'heading', level: 1, text: 'Title', marks: [{ kind: 'bold', from: 0, to: 5 }] }]} />)
+  it('renders heading blocks with semantic tag', () => {
+    const r = render(<Harness initial={[{ id: 'h', kind: 'heading', level: 1, text: 'Title' }]} />)
     expect(r.container.querySelector('h1')?.textContent).toBe('Title')
-    expect(r.container.querySelector('[data-doc-mark-kind="bold"]')?.textContent).toBe('Title')
   })
 
   it('Enter splits a block', () => {
@@ -54,14 +51,6 @@ describe('useEditableDocumentSurface', () => {
     placeCaret(editor, 1, 0)
     beforeInput(editor, 'deleteContentBackward')
     expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks.map((b: TestBlock) => b.text)).toEqual(['helloworld'])
-  })
-
-  it('Mod+B toggles bold mark on a same-block selection', () => {
-    const r = render(<Harness initial={[p('a', 'hello')]} />)
-    const editor = r.getByTestId('editor')
-    selectText(editor, 0, 0, 5)
-    fireEvent.keyDown(editor, { key: 'b', metaKey: true })
-    expect(JSON.parse(r.getByTestId('state').textContent || '{}').blocks[0].marks).toEqual([{ kind: 'bold', from: 0, to: 5 }])
   })
 
   it('compositionend inserts Korean text through operations', async () => {
@@ -215,7 +204,7 @@ function ControlledHarness({
 }
 
 function p(id: string, text: string): TestBlock {
-  return { id, kind: 'paragraph', text, marks: [] }
+  return { id, kind: 'paragraph', text }
 }
 
 function beforeInput(el: Element, inputType: string, data?: string): Event {
@@ -237,17 +226,6 @@ function placeCaret(root: Element, blockIndex: number, offset: number) {
   selection.addRange(range)
 }
 
-function selectText(root: Element, blockIndex: number, from: number, to: number) {
-  const block = root.querySelector(`[data-doc-block-index="${blockIndex}"]`)!
-  const text = block.firstChild?.nodeType === 3 ? block.firstChild! : block.firstChild?.firstChild ?? block
-  const range = document.createRange()
-  range.setStart(text, from)
-  range.setEnd(text, to)
-  const selection = document.getSelection()!
-  selection.removeAllRanges()
-  selection.addRange(range)
-}
-
 function applyPatches(blocks: TestBlock[], patches: readonly { op: string; path: string; value?: unknown }[]): TestBlock[] {
   const next = structuredClone(blocks) as TestBlock[]
   for (const patch of patches) {
@@ -256,7 +234,6 @@ function applyPatches(blocks: TestBlock[], patches: readonly { op: string; path:
     if (patch.op === 'add') next.splice(index, 0, patch.value as TestBlock)
     else if (patch.op === 'remove') next.splice(index, 1)
     else if (patch.op === 'replace' && parts[2] === 'text') next[index]!.text = patch.value as string
-    else if (patch.op === 'replace' && parts[2] === 'marks') next[index]!.marks = patch.value as EditableDocumentMark[]
   }
   return next.map((block, index) => ({ ...block, id: block.id === 'new' ? `new-${index}` : block.id }))
 }

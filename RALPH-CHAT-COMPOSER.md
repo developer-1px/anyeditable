@@ -26,7 +26,7 @@ chat composer 의 **mention(@) + slash-command(/)** 입력을 헤드리스로 �
         WHATWG Input Events L2 · W3C Selection API · WAI-ARIA APG Combobox · RFC 6902
         외부에서 가져오지 않은 신규 어휘 금지 (grep first)
 - I3. **`useComboboxPattern` 재사용** — popover ARIA 자체 구현 금지
-- I4. **`useJson` 재사용** — 자체 모델/undo 구현 금지
+- I4. **`useJSON` 재사용** — 자체 모델/undo 구현 금지
 - I5. **세 패키지 의존 방향 1차 단방향**:
         @interactive-os/anyeditable ─▶ @interactive-os/aria-kernel
         @interactive-os/anyeditable ─▶ zod-crud
@@ -55,7 +55,7 @@ const ComposerDoc = z.object({
 ```ts
 export function useEditableComposer(opts: {
   doc: z.infer<typeof ComposerDoc>
-  ops: JsonOps
+  ops: JSONOps
   triggers: Record<string, AtomicKind>
   onSubmit?: () => void
 }): {

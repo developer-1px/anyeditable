@@ -35,7 +35,7 @@ export function NativeDocumentScratchExample() {
       isComposing: native && 'isComposing' in native ? native.isComposing : undefined,
       defaultPrevented: native?.defaultPrevented,
       selection: snapshotSelection(root),
-      dom: readBlocksFromDom(root),
+      dom: readBlocksFromDOM(root),
       state: blocksRef.current.map(block => block.text),
     })}`
     console.info('[native-document-scratch:trace]', line)
@@ -61,7 +61,7 @@ export function NativeDocumentScratchExample() {
 
   const syncStateFromDom = useCallback(() => {
     const root = rootRef.current
-    const next = readBlocksFromDom(root)
+    const next = readBlocksFromDOM(root)
     if (next.length === 0) return
     blocksRef.current = next
     startTransition(() => setBlocks(next))
@@ -197,7 +197,7 @@ function createBlockElement(document: Document, block: ScratchBlock, index: numb
   return el
 }
 
-function readBlocksFromDom(root: HTMLElement | null): ScratchBlock[] {
+function readBlocksFromDOM(root: HTMLElement | null): ScratchBlock[] {
   if (!root) return []
   return Array.from(root.querySelectorAll<HTMLElement>('[data-scratch-block-index]')).map((el, index) => ({
     id: el.dataset.scratchBlockId || `scratch-${index}`,

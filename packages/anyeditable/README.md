@@ -1,18 +1,18 @@
 # @interactive-os/anyeditable
 
-Headless inline-edit kernels for React.
-**Two hooks, one identity** — markup·CSS·design tokens are 0건. Props 만 반환.
+Headless React kernel for **contenteditable surfaces — plain text only.**
+markup·CSS·design tokens are 0건. Props 만 반환. No marks, no formatting.
 
 | Hook | Use case | Vocabulary closure |
 |---|---|---|
-| `useEditable` (v0.2) | inline-edit cell · 1-line input/textarea/select with IME-safe lifecycle | WHATWG `composition` events, `KeyboardEvent.isComposing` |
-| `useEditableSurface` (v0.3) | contenteditable visual surface or composer — optional `@`-mention, `/`-command, atomic chips | WHATWG Input Events L2, W3C Selection API, RFC 6902, WAI-ARIA APG Combobox |
+| `useEditableSurface` | single-block contenteditable composer — optional `@`-mention, `/`-command, atomic chips | WHATWG Input Events L2, W3C Selection API, RFC 6902, WAI-ARIA APG Combobox |
+| `useEditableDocumentSurface` | multi-block contenteditable document — splitBlock, plain-text paste | WHATWG Input Events L2 (`insertParagraph`), W3C Selection API, RFC 6902 |
 
-The v0.3 surface is part of a **3-package family** dogfooded together:
+Part of a **3-package family** dogfooded together:
 
 ```
 @interactive-os/anyeditable ─▶ @interactive-os/aria-kernel  (useComboboxPattern, axes, fromList)
-@interactive-os/anyeditable ─▶ zod-crud        (useJsonDocument, JsonPatchOperation)
+@interactive-os/anyeditable ─▶ zod-crud        (useJSONDocument, JSONPatchOperation)
 ```
 
 — closed under W3C/IETF/WAI standards. No Lexical / ProseMirror / Slate.
@@ -20,48 +20,20 @@ The v0.3 surface is part of a **3-package family** dogfooded together:
 ## Install
 
 ```bash
-npm i @interactive-os/anyeditable
-# v0.3 surface additionally requires:
-npm i @interactive-os/aria-kernel zod-crud zod
+npm i @interactive-os/anyeditable @interactive-os/aria-kernel zod-crud zod
 ```
 
-## v0.2 — `useEditable` (cell / single-line edit)
-
-```tsx
-import { useEditable } from '@interactive-os/anyeditable'
-
-function CellGrid({ values, save }) {
-  const ed = useEditable<string>({
-    getValue: (id) => values[id] ?? '',
-    onCommit: (id, next) => save(id, next),
-    onNavigate: (id, dir) => nextCellId(id, dir),
-    initialFocus: 'A1',
-  })
-  return (
-    <div onKeyDown={(e) => ed.focusId && ed.handleTypeToEdit(e, ed.focusId)}>
-      {cells.map((id) =>
-        ed.editing === id
-          ? <input key={id} {...ed.inputProps} autoFocus />
-          : <span key={id} onDoubleClick={() => ed.startEdit(id)}>{values[id]}</span>
-      )}
-    </div>
-  )
-}
-```
-
-What you get: IME-safe Enter/Escape · Type-to-edit · Navigate-after-commit · Auto-focus + caret modes · Blur-commit · Escape-cancel · `<select>` adapter · Read-only gate.
-
-## v0.3 — `useEditableSurface` (contenteditable surface)
+## `useEditableSurface` (contenteditable surface)
 
 ```tsx
 import { useEditableSurface, useEphemeralCollection } from '@interactive-os/anyeditable'
-import { useJsonDocument } from 'zod-crud'
+import { useJSONDocument } from 'zod-crud'
 import { fromList } from '@interactive-os/aria-kernel'
 import { useComboboxPattern } from '@interactive-os/aria-kernel/patterns'
 import { ComposerDoc, EMPTY_DOC } from '@interactive-os/anyeditable'
 
 function ChatComposer({ users, onSend }) {
-  const jd = useJsonDocument(ComposerDoc, EMPTY_DOC, { history: 50 })
+  const jd = useJSONDocument(ComposerDoc, EMPTY_DOC, { history: 50 })
   const ops = { apply: (patches) => jd.ops.patch(patches) }
 
   const c = useEditableSurface({
@@ -105,7 +77,7 @@ function ChatComposer({ users, onSend }) {
 }
 ```
 
-**v0.3.1 — Lexical-concept self DOM reconciler.** React only owns the
+**Self DOM reconciler.** React only owns the
 container ref; the package mutates text nodes in-place via `nodeValue`
 to preserve native IME composition context. Atomic blocks render via
 `createPortal` (DecoratorNode-equivalent) so hosts keep React component
@@ -119,7 +91,7 @@ What you get:
 - **Forward + backward delete** across atomics
 - **DOM Selection ↔ DocPos** via `resolveCaret` + `data-block-index` SSOT
 - **Cmd/Ctrl+Z & Cmd/Ctrl+Shift+Z** keyboard shortcuts
-- **Undo/redo** through zod-crud's `useJsonDocument` history
+- **Undo/redo** through zod-crud's `useJSONDocument` history
 - **gzip ~4 KB** (peer deps 제외)
 
 ## Standards closure
@@ -148,7 +120,8 @@ export default defineConfig({
 
 ## Out of scope (intentional)
 
-- Multi-block document tree / inline marks (bold/italic/link) — that's ProseMirror/Lexical territory
+- **Inline marks (bold/italic/link/code/highlight)** — that's ProseMirror/Lexical territory
+- **Form-element inline-edit (input/textarea/select)** — removed in 0.5; this package is contenteditable-only
 - Collaborative editing (OT/CRDT)
 - Position mapping through ops (chat scope: re-resolve from DOM after render)
 - Rich paste (HTML→schema) — paste is plain-text-forced

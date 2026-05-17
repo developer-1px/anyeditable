@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState, type HTMLAttributes, type React
 import type { AtomicKind, Block, ComposerDoc } from './schema.js'
 import type { TriggerHint } from './triggers.js'
 import { commitAtomicPatch, type Patch } from './blockOps.js'
-import { useDomBridge } from './useDomBridge.js'
+import { useDOMBridge } from './useDOMBridge.js'
 import { useDocReconciler, type CaretPos } from './useDocReconciler.js'
 import { useComposerKeys } from './composerKeys.js'
 import { useClipboard } from './useClipboard.js'
@@ -11,13 +11,13 @@ import { useSyncDocOps } from './syncDocOps.js'
 import { buildContainerProps } from './containerProps.js'
 import { serialize } from './serialize.js'
 
-export interface JsonOps { apply(patches: readonly Patch[]): void }
+export interface JSONOps { apply(patches: readonly Patch[]): void }
 
 export interface TriggerState extends TriggerHint { blockIdx: number }
 
 export interface UseEditableSurfaceOptions {
   doc: ComposerDoc
-  ops: JsonOps
+  ops: JSONOps
   triggers: Record<string, AtomicKind>
   /** Atomic render callback — DecoratorNode-equivalent (createPortal into contentEditable=false). */
   renderAtomic?: (block: Block) => ReactNode
@@ -57,8 +57,8 @@ export function useEditableSurface(o: UseEditableSurfaceOptions): UseEditableSur
   stateRef.current.ops = useSyncDocOps(ops, stateRef)
 
   const setRef = useCallback((el: HTMLElement | null) => { elRef.current = el }, [])
-  useDomBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)
-  const opsRef = useRef<JsonOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
+  useDOMBridge({ el: elRef, caret, pendingCaret, composing, state: stateRef }, setTrigger)
+  const opsRef = useRef<JSONOps>(stateRef.current.ops); opsRef.current = stateRef.current.ops
   // Pass stateRef directly so cut/copy always read the sync-mirror doc, not a
   // render-time snapshot that lags by one tick.
   useClipboard(elRef, stateRef, opsRef)

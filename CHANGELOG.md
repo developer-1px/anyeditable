@@ -31,7 +31,7 @@ kernel 추가. Lexical/ProseMirror/Slate 미참조, gzip ~4 KB.
 
 ### Dogfood findings filed
 
-- zod-crud#54 — `JsonOps.apply()` throwing variant
+- zod-crud#54 — `JSONOps.apply()` throwing variant
 - zod-crud#55 — `applyPatch` strict TS inference
 - zod-crud#56 — transaction / coalesce-with-previous for keystroke undo granularity
 - aria-kernel#134 — `NormalizedData` builder for ad-hoc lists

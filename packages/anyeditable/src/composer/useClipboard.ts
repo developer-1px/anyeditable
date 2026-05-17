@@ -1,6 +1,6 @@
 import { useEffect, type MutableRefObject } from 'react'
 import type { ComposerDoc } from './schema.js'
-import type { JsonOps } from './useEditableSurface.js'
+import type { JSONOps } from './useEditableSurface.js'
 import { resolveRange } from './resolveRange.js'
 import { serializeRange } from './serialize.js'
 import { deleteRangePatch } from './blockOps.js'
@@ -13,7 +13,7 @@ import { deleteRangePatch } from './blockOps.js'
 export function useClipboard(
   elRef: MutableRefObject<HTMLElement | null>,
   docRef: MutableRefObject<ComposerDoc> | { current: { doc: ComposerDoc; readOnly?: boolean } },
-  opsRef: MutableRefObject<JsonOps>,
+  opsRef: MutableRefObject<JSONOps>,
 ): void {
   useEffect(() => {
     const el = elRef.current

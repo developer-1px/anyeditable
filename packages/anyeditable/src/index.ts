@@ -1,6 +1,3 @@
-export { useEditable } from './useEditable.js'
-export type { UseEditableOptions, InputProps, SelectProps, NavDir, CaretMode } from './editableTypes.js'
-
 export {
   ComposerDoc,
   Block,
@@ -19,8 +16,6 @@ export type {
   DocumentRange,
   EditableDocumentBlockAdapter,
   EditableDocumentBlockKind,
-  EditableDocumentMark,
-  EditableDocumentMarkKind,
   EditableDocumentOps,
   UseEditableDocumentSurfaceOptions,
   UseEditableDocumentSurfaceReturn,
@@ -35,7 +30,7 @@ export type {
   UseEditableSurfaceOptions,
   UseEditableSurfaceReturn,
   TriggerState,
-  JsonOps,
+  JSONOps,
 } from './composer/useEditableSurface.js'
 export type {
   UseEditableComposerOptions,

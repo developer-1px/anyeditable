@@ -9,9 +9,9 @@
 
 | # | 카테고리 | 위치 | 상태 |
 |---|---|---|---|
-| F1 | zod-crud DX | `JsonOps.apply()` throwing variant for fire-and-forget | [#54](https://github.com/developer-1px/zod-crud/issues/54) |
+| F1 | zod-crud DX | `JSONOps.apply()` throwing variant for fire-and-forget | [#54](https://github.com/developer-1px/zod-crud/issues/54) |
 | F2 | aria-kernel DX | `NormalizedData` builder for ad-hoc lists | [#134](https://github.com/developer-1px/aria-kernel/issues/134) |
-| F3 | 가족 어휘 SSOT | local `Patch` → zod-crud `JsonPatchOperation` | 자체 해결 (iter 3) |
+| F3 | 가족 어휘 SSOT | local `Patch` → zod-crud `JSONPatchOperation` | 자체 해결 (iter 3) |
 | F4 | zod-crud TS | `applyPatch` strict TS inference | [#55](https://github.com/developer-1px/zod-crud/issues/55) |
 | F5 | zod-crud peer | zod ^4 강제 명시 | 자체 해결 (zod v4 채택) |
 | F6 | aria-kernel UX | `useComboboxPattern` `/patterns` subpath | 통합 가이드 |
@@ -44,7 +44,7 @@
 
 ### 가족 invariant insights
 
-1. **Standards-closed vocabulary (I2)** — `Patch = JsonPatchOperation`, `useComboboxPattern`, `aria-multiline` 모두 한 SSOT 에서. 행동 추가 시 어휘 동기 누락은 a11y 회귀 (F23).
+1. **Standards-closed vocabulary (I2)** — `Patch = JSONPatchOperation`, `useComboboxPattern`, `aria-multiline` 모두 한 SSOT 에서. 행동 추가 시 어휘 동기 누락은 a11y 회귀 (F23).
 2. **Render lag (F8)** — derived state 를 패턴에 어댑트할 때 `useMemo` 의 dep stale 가 보이지 않는 race. `setCarried(prev => reduce(...))` 패턴이 정답.
 3. **Operational constants drift (F18)** — magic 100ms 같은 비-spec 상수가 두 패키지에 중복 → 가족 SSOT 필요.
 4. **RFC 6902 batch atomicity (F14)** — 같은 path 에 대한 두 patch 직렬 적용 시 두 번째가 stale state 위에서 동작 → 단일 replace 로 통합이 정답.
@@ -52,12 +52,12 @@
 
 ---
 
-## F1 · zod-crud — `JsonOps.patch()` 의 결과형이 fire-and-forget 사용에 무겁다
+## F1 · zod-crud — `JSONOps.patch()` 의 결과형이 fire-and-forget 사용에 무겁다
 
 **상황:** chat composer kernel 의 `beforeinput` 핸들러는 keystroke 단위로 patch 를 발행한다.
 실패는 schema 위반 = 프로그래밍 버그이므로 throw 가 자연스럽다.
 
-**현재:** `ops.patch(operations) → JsonResult` (rich error info). keystroke 마다 result 를 검사하기엔 무겁고,
+**현재:** `ops.patch(operations) → JSONResult` (rich error info). keystroke 마다 result 를 검사하기엔 무겁고,
 대부분의 호출 지점에서 result 를 버린다.
 
 **제안:** `ops.apply(operations)` (throw on violation) + 기존 `ops.patch()` 는 result 변종으로 유지.
@@ -81,15 +81,15 @@
 
 ---
 
-## F3 · 정체성 가족 — `JsonPatchOperation` 어휘 SSOT 가 zod-crud 에 있음
+## F3 · 정체성 가족 — `JSONPatchOperation` 어휘 SSOT 가 zod-crud 에 있음
 
 **상황:** @interactive-os/anyeditable kernel 이 patch 타입을 자체 정의하면 zod-crud 와 어휘 분기.
 
-**현재 처리:** `composer/blockOps.ts` 안 `Patch` 를 자체 선언했으나 실제로는 `JsonPatchOperation` 과 동일 shape.
+**현재 처리:** `composer/blockOps.ts` 안 `Patch` 를 자체 선언했으나 실제로는 `JSONPatchOperation` 과 동일 shape.
 
-**조치:** iter ≥3 에서 `JsonPatchOperation` 을 zod-crud 에서 import 하도록 교체. 가족 어휘 단일 SSOT.
+**조치:** iter ≥3 에서 `JSONPatchOperation` 을 zod-crud 에서 import 하도록 교체. 가족 어휘 단일 SSOT.
 
-**Issue 후보 제목:** (자체 조치 완료 — iter 3 에서 zod-crud `JsonPatchOperation` import 로 교체)
+**Issue 후보 제목:** (자체 조치 완료 — iter 3 에서 zod-crud `JSONPatchOperation` import 로 교체)
 
 ---
 
@@ -176,7 +176,7 @@ vitest 에서 "Cannot read properties of null (reading 'useState')" — React �
 **상황:** v0.2.0 lifecycle 은 composition 동안 ops 를 게이트만 했고 compositionend 후
 DOM ↔ model 정합 경로 부재. 한글 입력이 DOM 에는 들어가지만 zod-crud doc 에 없음 (정합 깨짐).
 
-**iter 7 조치:** `useDomBridge.onCE` 에서 `event.data` (확정 텍스트)를
+**iter 7 조치:** `useDOMBridge.onCE` 에서 `event.data` (확정 텍스트)를
 `insertTextPatch` 로 한 번에 발행. caret offset 갱신, trigger 재검출.
 한글 `ㅎ→하→한` 시퀀스 → `compositionend(data='한')` → text='한' 회귀 테스트 통과.
 
@@ -189,7 +189,7 @@ DOM ↔ model 정합 경로 부재. 한글 입력이 DOM 에는 들어가지만 
 
 ## F10 · @interactive-os/anyeditable 자체 — 키스트로크 burst → 1 transaction (다음 iter 자체 해결)
 
-**상황:** iter 8 에서 `useJsonDocument` 채택 후 undo 검증. 현재 `ops.apply(patches)` 가 매
+**상황:** iter 8 에서 `useJSONDocument` 채택 후 undo 검증. 현재 `ops.apply(patches)` 가 매
 beforeinput 마다 호출 → zod-crud history 가 키스트로크 1개당 1 step 기록.
 "hello" 입력 후 Cmd+Z 5번 필요 — chat UX 결함.
 
@@ -226,7 +226,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
 - `composer/resolveCaret.ts` — pure W3C Selection API → `{ blockIdx, offset }` 변환기.
   - block 식별: `data-block-index="N"` + `data-block-kind="text|mention|command"` SSOT
   - text: focusOffset 그대로 / atomic: 앞·뒤 위치 → blockIdx 또는 blockIdx+1
-- `useDomBridge` 에 `selectionchange` listener 부착 (composition 중 게이트).
+- `useDOMBridge` 에 `selectionchange` listener 부착 (composition 중 게이트).
 - `useEditableComposer` API 확장: `blockProps(i)` (모든 block 에 spread) — atomic 은 `atomicProps` 와 함께.
 - public surface: `resolveCaret`, `DocPos` export.
 
@@ -256,7 +256,7 @@ contenteditable 내부 selection 변화에 caret model 이 반응 안 함.
   - `insertText` + range → **단일 replace patch** (`text.slice(0,start) + data + text.slice(end)`)
     - 두 patch 직렬 적용 시 두 번째가 stale state 기반 → 'Xhey' 버그 발견 후 단일 replace 로 통합
   - `deleteContentBackward/Forward` + range → range 삭제만 (캐릭터 단발 무시)
-- `useDomBridge` 가 매 beforeinput 시 `getSelection()` + `resolveRange` 로 range 주입
+- `useDOMBridge` 가 매 beforeinput 시 `getSelection()` + `resolveRange` 로 range 주입
 
 **테스트:** drag-select 'hey' → type 'X' → 'X' / select 'hi' → Backspace → '' / unit deleteRangePatch.
 
@@ -321,9 +321,9 @@ else branch 가 preventDefault 만 하고 ops 미발행 → 줄바꿈 누락.
 **상황:** 사용자가 `@bob` popover 띄운 채 외부 클릭 시 popover 가 그대로 — Esc 만 cancel 가능.
 
 **iter 19 조치:**
-- `useDomBridge` 가 root 의 `blur` 리스너에서 100ms 후 `setTrigger(null)`
+- `useDOMBridge` 가 root 의 `blur` 리스너에서 100ms 후 `setTrigger(null)`
 - `focus` 시 timer 취소 — combobox option 의 `mouseDown→activate` 가 blur 보다 먼저 fire 될 시간 확보 (de facto 100ms)
-- 100줄 게이트 회피: `projectText.ts` 분리 (13줄), `useDomBridge` 90줄 회귀
+- 100줄 게이트 회피: `projectText.ts` 분리 (13줄), `useDOMBridge` 90줄 회귀
 
 **테스트:** popover 표시 → blur → 150ms 대기 → popover null. 통과.
 
@@ -393,7 +393,7 @@ combobox 등 upstream handler 가 e.preventDefault() 한 후엔 우리는 처리
 
 - `detectTrigger(text, cursor, triggers, minQueryLength?)` 4번째 인자 추가
 - `useEditableComposer.minQueryLength?: number` (default 0) 옵션 통과
-- `stateRef` 에 영속, `useDomBridge.pushTrigger` 가 매 호출 시 사용
+- `stateRef` 에 영속, `useDOMBridge.pushTrigger` 가 매 호출 시 사용
 
 **테스트:** `triggers.test.ts` 에 minQueryLength=1, 2 회귀 (4 단언).
 
@@ -480,7 +480,7 @@ contenteditable 등 onChange 없는 컨트롤에서도 typing path 가 자동 �
 ## F28 · 외부 doc shrink (undo/load) 후 stale caret 으로 인한 zod-crud `path_not_found` (iter 31, 자체 해결)
 
 **증상:** chip commit + tail 입력 후 Cmd+Z 여러 번 → 다음 keystroke 마다
-`JsonCrudError: useJson failed: path_not_found — op[0]: out of range: 4` 다발성 throw.
+`JSONCrudError: useJSON failed: path_not_found — op[0]: out of range: 4` 다발성 throw.
 `bridgeHandlers.handleBI:39` 에서 ops.apply 가 zod-crud 의 applyPatch 를 거쳐 throw.
 
 **원인:** `refs.caret.current` 는 last interaction 의 blockIdx 를 그대로 들고 있음.

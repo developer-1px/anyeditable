@@ -1,7 +1,7 @@
-import type { DomBridgeRefs } from '../bridgeHandlers.js'
+import type { DOMBridgeRefs } from '../bridgeHandlers.js'
 import { EMPTY_DOC, type ComposerDoc } from '../schema.js'
 
-export function refs(overrides: Partial<DomBridgeRefs['state']['current']> = {}): DomBridgeRefs & { applied: unknown[] } {
+export function refs(overrides: Partial<DOMBridgeRefs['state']['current']> = {}): DOMBridgeRefs & { applied: unknown[] } {
   const applied: unknown[] = []
   const state = {
     doc: EMPTY_DOC as ComposerDoc,

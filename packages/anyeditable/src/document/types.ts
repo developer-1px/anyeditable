@@ -1,26 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react'
-import type { JsonPatchOperation } from 'zod-crud'
+import type { JSONPatchOperation } from 'zod-crud'
 
 export type EditableDocumentBlockKind = 'paragraph' | 'heading' | 'listItem' | 'callout' | 'code'
-
-export type EditableDocumentMarkKind =
-  | 'bold'
-  | 'italic'
-  | 'code'
-  | 'strikethrough'
-  | 'highlight'
-  | 'link'
-  | 'wikiLink'
-  | 'tag'
-  | 'embed'
-
-export interface EditableDocumentMark {
-  kind: EditableDocumentMarkKind
-  from: number
-  to: number
-  href?: string
-  value?: string
-}
 
 export interface DocumentPosition {
   blockIndex: number
@@ -36,17 +17,15 @@ export interface EditableDocumentBlockAdapter<TBlock> {
   getKey?: (block: TBlock, index: number) => string
   getKind: (block: TBlock, index: number) => EditableDocumentBlockKind
   getText: (block: TBlock, index: number) => string
-  getMarks?: (block: TBlock, index: number) => readonly EditableDocumentMark[]
   getHeadingLevel?: (block: TBlock, index: number) => 1 | 2 | 3 | 4 | 5 | 6
   createParagraph: (text: string) => TBlock
   createHeading?: (text: string, level: 1 | 2 | 3 | 4 | 5 | 6) => TBlock
   createCode?: (text: string) => TBlock
   textPath?: (index: number) => string
-  marksPath?: (index: number) => string
 }
 
 export interface EditableDocumentOps {
-  apply(patches: readonly JsonPatchOperation[]): void
+  apply(patches: readonly JSONPatchOperation[]): void
 }
 
 export interface UseEditableDocumentSurfaceOptions<TBlock> {

@@ -1,10 +1,8 @@
-import type { JsonPatchOperation } from 'zod-crud'
+import type { JSONPatchOperation } from 'zod-crud'
 import type {
   DocumentRange,
   DocumentPosition,
   EditableDocumentBlockAdapter,
-  EditableDocumentMark,
-  EditableDocumentMarkKind,
 } from './types.js'
 
 export function insertTextOps<TBlock>(
@@ -12,7 +10,7 @@ export function insertTextOps<TBlock>(
   adapter: EditableDocumentBlockAdapter<TBlock>,
   position: DocumentPosition,
   text: string,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const current = adapter.getText(blocks[position.blockIndex]!, position.blockIndex)
   const next = current.slice(0, position.offset) + text + current.slice(position.offset)
   return {
@@ -26,7 +24,7 @@ export function replaceRangeTextOps<TBlock>(
   adapter: EditableDocumentBlockAdapter<TBlock>,
   range: DocumentRange,
   text: string,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const start = before(range.anchor, range.focus) ? range.anchor : range.focus
   const end = before(range.anchor, range.focus) ? range.focus : range.anchor
   if (start.blockIndex !== end.blockIndex) return insertTextOps(blocks, adapter, start, text)
@@ -43,7 +41,7 @@ export function replaceRangeTextFromSnapshotOps<TBlock>(
   range: DocumentRange,
   baseText: string,
   text: string,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const start = before(range.anchor, range.focus) ? range.anchor : range.focus
   const end = before(range.anchor, range.focus) ? range.focus : range.anchor
   const next = baseText.slice(0, start.offset) + text + baseText.slice(start.blockIndex === end.blockIndex ? end.offset : start.offset)
@@ -57,7 +55,7 @@ export function splitBlockOps<TBlock>(
   blocks: readonly TBlock[],
   adapter: EditableDocumentBlockAdapter<TBlock>,
   position: DocumentPosition,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const block = blocks[position.blockIndex]!
   const text = adapter.getText(block, position.blockIndex)
   const before = text.slice(0, position.offset)
@@ -75,7 +73,7 @@ export function deleteBackwardOps<TBlock>(
   blocks: readonly TBlock[],
   adapter: EditableDocumentBlockAdapter<TBlock>,
   position: DocumentPosition,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const block = blocks[position.blockIndex]
   if (!block) return { patches: [], caret: position }
   const text = adapter.getText(block, position.blockIndex)
@@ -101,7 +99,7 @@ export function deleteForwardOps<TBlock>(
   blocks: readonly TBlock[],
   adapter: EditableDocumentBlockAdapter<TBlock>,
   position: DocumentPosition,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const block = blocks[position.blockIndex]
   if (!block) return { patches: [], caret: position }
   const text = adapter.getText(block, position.blockIndex)
@@ -122,31 +120,12 @@ export function deleteForwardOps<TBlock>(
   }
 }
 
-export function toggleMarkOps<TBlock>(
-  blocks: readonly TBlock[],
-  adapter: EditableDocumentBlockAdapter<TBlock>,
-  blockIndex: number,
-  from: number,
-  to: number,
-  kind: EditableDocumentMarkKind,
-): JsonPatchOperation[] {
-  if (from === to) return []
-  const block = blocks[blockIndex]
-  if (!block) return []
-  const marks = [...(adapter.getMarks?.(block, blockIndex) ?? [])]
-  const existing = marks.findIndex(mark => mark.kind === kind && mark.from === from && mark.to === to)
-  const next: EditableDocumentMark[] = existing >= 0
-    ? marks.filter((_, index) => index !== existing)
-    : [...marks, { kind, from, to }]
-  return [{ op: 'replace', path: marksPath(adapter, blockIndex), value: next }]
-}
-
 export function pasteTextOps<TBlock>(
   blocks: readonly TBlock[],
   adapter: EditableDocumentBlockAdapter<TBlock>,
   position: DocumentPosition,
   text: string,
-): { patches: JsonPatchOperation[]; caret: DocumentPosition } {
+): { patches: JSONPatchOperation[]; caret: DocumentPosition } {
   const normalized = text.replace(/\r\n?/g, '\n')
   const lines = normalized.split('\n')
   if (lines.length <= 1) return insertTextOps(blocks, adapter, position, normalized)
@@ -155,7 +134,7 @@ export function pasteTextOps<TBlock>(
   const head = current.slice(0, position.offset) + lines[0]!
   const tail = lines.at(-1)! + current.slice(position.offset)
   const middle = lines.slice(1, -1)
-  const patches: JsonPatchOperation[] = [{ op: 'replace', path: textPath(adapter, position.blockIndex), value: head }]
+  const patches: JSONPatchOperation[] = [{ op: 'replace', path: textPath(adapter, position.blockIndex), value: head }]
   middle.forEach((line, index) => {
     patches.push({ op: 'add', path: `/blocks/${position.blockIndex + index + 1}`, value: blockFromMarkdown(adapter, line) })
   })
@@ -175,10 +154,6 @@ function blockFromMarkdown<TBlock>(adapter: EditableDocumentBlockAdapter<TBlock>
 
 function textPath<TBlock>(adapter: EditableDocumentBlockAdapter<TBlock>, index: number): string {
   return adapter.textPath?.(index) ?? `/blocks/${index}/text`
-}
-
-function marksPath<TBlock>(adapter: EditableDocumentBlockAdapter<TBlock>, index: number): string {
-  return adapter.marksPath?.(index) ?? `/blocks/${index}/marks`
 }
 
 function before(a: DocumentPosition, b: DocumentPosition): boolean {

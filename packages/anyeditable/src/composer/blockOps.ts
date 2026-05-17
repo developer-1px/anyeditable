@@ -1,8 +1,8 @@
-import type { JsonPatchOperation } from 'zod-crud'
+import type { JSONPatchOperation } from 'zod-crud'
 import type { Block } from './schema.js'
 
-/** F3 자체 조치 — zod-crud `JsonPatchOperation` 어휘 SSOT 채택 */
-export type Patch = JsonPatchOperation
+/** F3 자체 조치 — zod-crud `JSONPatchOperation` 어휘 SSOT 채택 */
+export type Patch = JSONPatchOperation
 
 /**
  * RFC 6902 패치 — flat blocks array 위 inline-only 변환.

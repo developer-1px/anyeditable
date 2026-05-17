@@ -1,5 +1,5 @@
 import type { AtomicKind, ComposerDoc } from './schema.js'
-import type { JsonOps } from './useEditableSurface.js'
+import type { JSONOps } from './useEditableSurface.js'
 import type { TriggerHint } from './triggers.js'
 import type { CaretPos } from './useDocReconciler.js'
 import { detectTrigger } from './triggers.js'
@@ -13,16 +13,16 @@ import { clampCaret, clampRange, insertSize } from './caretClamp.js'
 
 export type SetTrigger = (t: (TriggerHint & { blockIdx: number }) | null) => void
 
-export interface DomBridgeRefs {
+export interface DOMBridgeRefs {
   el: { current: HTMLElement | null }
   caret: { current: CaretPos }
   pendingCaret: { current: CaretPos | null }
   composing: { current: boolean }
-  state: { current: { doc: ComposerDoc; ops: JsonOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; multiline: boolean; maxLength: number | undefined; dismissed: { blockIdx: number; startOffset: number } | null } }
+  state: { current: { doc: ComposerDoc; ops: JSONOps; triggers: Record<string, AtomicKind>; minQueryLength: number; readOnly: boolean; multiline: boolean; maxLength: number | undefined; dismissed: { blockIdx: number; startOffset: number } | null } }
 }
 
 /** beforeinput dispatch — caret/range read from live Selection (not cached). */
-export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, setTrigger: SetTrigger): void {
+export function handleBI(ie: InputEvent, el: HTMLElement, refs: DOMBridgeRefs, setTrigger: SetTrigger): void {
   const { doc, ops, readOnly, multiline, maxLength } = refs.state.current
   if (readOnly) { ie.preventDefault(); return }
   if (!multiline && (ie.inputType === 'insertLineBreak' || ie.inputType === 'insertParagraph')) { ie.preventDefault(); return }
@@ -54,7 +54,7 @@ export function handleBI(ie: InputEvent, el: HTMLElement, refs: DomBridgeRefs, s
 }
 
 /** compositionend — IME 단발 commit 으로 모은 조합 결과 입력. */
-export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: SetTrigger): void {
+export function handleCE(e: CompositionEvent, refs: DOMBridgeRefs, setTrigger: SetTrigger): void {
   refs.composing.current = false
   const text = e.data ?? ''
   if (!text) return
@@ -73,13 +73,13 @@ export function handleCE(e: CompositionEvent, refs: DomBridgeRefs, setTrigger: S
 /** Caret moved without input (arrow keys / click) — re-evaluate trigger from
  *  current block text at current caret. Closes popover when caret drifts before
  *  the anchor or boundary is broken. */
-export function reEvalTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger): void {
+export function reEvalTrigger(refs: DOMBridgeRefs, setTrigger: SetTrigger): void {
   const { doc } = refs.state.current
   const caret = refs.caret.current
   pushTrigger(refs, setTrigger, caret, getBlockText(doc, caret.blockIdx))
 }
 
-function pushTrigger(refs: DomBridgeRefs, setTrigger: SetTrigger, caret: CaretPos, textProjection: string): void {
+function pushTrigger(refs: DOMBridgeRefs, setTrigger: SetTrigger, caret: CaretPos, textProjection: string): void {
   const { doc, triggers, minQueryLength } = refs.state.current
   // Invalidate dismissed if its anchor no longer points to a live trigger char
   // (block removed, text changed). This covers submit + load, undo past the

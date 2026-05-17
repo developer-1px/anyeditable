@@ -1,5 +1,4 @@
 import { NotebookSection } from './docs/NotebookSection.js'
-import { CellInlineEditExample } from './examples/CellInlineEditExample.js'
 import { ComposerExample } from './examples/ComposerExample.js'
 import { DocumentSurfaceExample } from './examples/DocumentSurfaceExample.js'
 import { NativeDocumentScratchExample } from './examples/NativeDocumentScratchExample.js'
@@ -44,11 +43,6 @@ export function App() {
 
       <NotebookSection id={sections[2]!.id} title={sections[2]!.title}>
         <SectionParagraphs section={sections[2]!} />
-        <CellInlineEditExample />
-      </NotebookSection>
-
-      <NotebookSection id={sections[3]!.id} title={sections[3]!.title}>
-        <SectionParagraphs section={sections[3]!} />
         <ComposerExample />
       </NotebookSection>
 

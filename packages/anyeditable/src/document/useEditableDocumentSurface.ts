@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { isImeSafe, matches } from '@interactive-os/keyboard'
-import type { JsonPatchOperation } from 'zod-crud'
+import { isIMESafe } from '@interactive-os/keyboard'
+import type { JSONPatchOperation } from 'zod-crud'
 import type {
   DocumentRange,
   DocumentPosition,
@@ -15,7 +15,6 @@ import {
   pasteTextOps,
   replaceRangeTextFromSnapshotOps,
   splitBlockOps,
-  toggleMarkOps,
 } from './operations.js'
 import { orderedRange, resolveDocumentRange, restoreDocumentPosition } from './selection.js'
 import { toKeyInput } from '../keyboardInput.js'
@@ -42,7 +41,7 @@ export function useEditableDocumentSurface<TBlock>(
   }, [])
   useDocumentReconciler(elRef, blocks, adapter, pendingSelection, reconciliationLocked)
 
-  const apply = useCallback((result: { patches: JsonPatchOperation[]; caret: DocumentPosition }) => {
+  const apply = useCallback((result: { patches: JSONPatchOperation[]; caret: DocumentPosition }) => {
     if (result.patches.length === 0) return
     pendingSelection.current = result.caret
     stateRef.current.ops.apply(result.patches)
@@ -200,15 +199,7 @@ export function useEditableDocumentSurface<TBlock>(
     const state = stateRef.current
     if (!root || state.readOnly) return
     const key = toKeyInput(e, { isComposing: nativeComposing.current || reconciliationLocked.current })
-    if (!isImeSafe(key)) return
-    if (matches(key, 'Control+b Meta+b Control+B Meta+B')) {
-      const range = resolveDocumentRange(root)
-      if (!range) return
-      const { start, end } = orderedRange(range)
-      if (start.blockIndex !== end.blockIndex || start.offset === end.offset) return
-      e.preventDefault()
-      state.ops.apply(toggleMarkOps(state.blocks, state.adapter, start.blockIndex, start.offset, end.offset, 'bold'))
-    }
+    if (!isIMESafe(key)) return
   }, [])
 
   useLayoutEffect(() => {
@@ -269,8 +260,6 @@ export type {
   DocumentRange,
   EditableDocumentBlockAdapter,
   EditableDocumentBlockKind,
-  EditableDocumentMark,
-  EditableDocumentMarkKind,
   EditableDocumentOps,
   UseEditableDocumentSurfaceOptions,
   UseEditableDocumentSurfaceReturn,

@@ -5,7 +5,7 @@ export {
 } from './useEditableSurface.js'
 
 export type {
-  JsonOps,
+  JSONOps,
   TriggerState,
   UseEditableSurfaceOptions,
   UseEditableSurfaceReturn,
